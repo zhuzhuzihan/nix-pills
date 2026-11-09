@@ -1,23 +1,23 @@
-# Functions and Imports
+# 函数与导入
 
-Welcome to the fifth Nix pill. In the previous [fourth pill](04-basics-of-language.md) we touched the Nix language for a moment. We introduced basic types and values of the Nix language, and basic expressions such as `if`, `with` and `let`. I invite you to re-read about these expressions and play with them in the repl.
+欢迎来到第五篇 Nix 药丸。在上一篇[第四篇药丸](04-basics-of-language.md)中，我们初步接触了 Nix 语言。我们介绍了 Nix 语言的基本类型和值，以及诸如 `if`、`with` 和 `let` 之类的基本表达式。我建议你重读这些表达式的相关内容，并在 repl 中把玩它们。
 
-Functions help to build reusable components in a big repository like [nixpkgs](https://github.com/NixOS/nixpkgs/). The Nix manual has a [great explanation of functions](https://nix.dev/manual/nix/stable/language/constructs#functions). Let's go: pill on one hand, Nix manual on the other hand.
+函数有助于在像 [nixpkgs](https://github.com/NixOS/nixpkgs/) 这样的大型仓库中构建可复用的组件。Nix 手册中有一份[关于函数的出色讲解](https://nix.dev/manual/nix/stable/language/constructs#functions)。开始吧：一手拿着药丸，一手翻着 Nix 手册。
 
-I remind you how to enter the Nix environment: `source ~/.nix-profile/etc/profile.d/nix.sh`
+提醒一下进入 Nix 环境的方法：`source ~/.nix-profile/etc/profile.d/nix.sh`
 
-## Nameless and single parameter
+## 匿名函数与单参数
 
-Functions are anonymous (lambdas), and only have a single parameter. The syntax is extremely simple. Type the parameter name, then "`:`", then the body of the function.
+函数是匿名的（lambda），并且只有一个参数。语法极其简单：输入参数名，然后是 "`:`"，接着是函数体。
 
 ```console
 nix-repl> x: x*2
 «lambda»
 ```
 
-So here we defined a function that takes a parameter `x`, and returns `x*2`. The problem is that we cannot use it in any way, because it's unnamed... joke!
+这里我们定义了一个函数，它接收参数 `x` 并返回 `x*2`。问题是我们无法以任何方式使用它，因为它没有名字……开个玩笑！
 
-We can store functions in variables.
+我们可以把函数存储在变量中。
 
 ```console
 nix-repl> double = x: x*2
@@ -27,15 +27,15 @@ nix-repl> double 3
 6
 ```
 
-As usual, please ignore the special syntax for assignments inside `nix repl`. So, we defined a function `x: x*2` that takes one parameter `x`, and returns `x*2`. This function is then assigned to the variable `double`. Finally we did our first function call: `double 3`.
+照旧，请忽略 `nix repl` 中用于赋值的特殊语法。我们定义了一个函数 `x: x*2`，它接收一个参数 `x` 并返回 `x*2`。这个函数随后被赋值给变量 `double`。最后我们完成了第一次函数调用：`double 3`。
 
-Big note: it's not like many other programming languages where you write `double(3)`. It really is `double 3`.
+特别提醒：这不像许多其他编程语言那样写成 `double(3)`，而确实是 `double 3`。
 
-In summary: to call a function, name the variable, then space, then the argument. Nothing else to say, it's as easy as that.
+总结一下：调用函数时，先写变量名，然后是空格，接着是实参。没有更多可说的，就是这么简单。
 
-## More than one parameter
+## 多于一个参数
 
-How do we create a function that accepts more than one parameter? For people not used to functional programming, this may take a while to grasp. Let's do it step by step.
+如何创建一个接收多个参数的函数？对于不习惯函数式编程的人来说，这可能需要一段时间才能领会。我们一步一步来。
 
 ```console
 nix-repl> mul = a: (b: a*b)
@@ -47,9 +47,9 @@ nix-repl> (mul 3) 4
 12
 ```
 
-We defined a function that takes the parameter `a`, the body returns another function. This other function takes a parameter `b` and returns `a*b`. Therefore, calling `mul 3` returns this kind of function: `b: 3*b`. In turn, we call the returned function with `4`, and get the expected result.
+我们定义了一个接收参数 `a` 的函数，其函数体返回另一个函数。这另一个函数接收参数 `b` 并返回 `a*b`。因此，调用 `mul 3` 返回的是这种函数：`b: 3*b`。接着，我们用 `4` 调用这个返回的函数，得到期望的结果。
 
-You don't have to use parentheses at all, Nix has sane priorities when parsing the code:
+你完全可以不用括号，Nix 在解析代码时有合理的优先级：
 
 ```console
 nix-repl> mul = a: b: a*b
@@ -63,9 +63,9 @@ nix-repl> mul (6+7) (8+9)
 221
 ```
 
-Much more readable, you don't even notice that functions only receive one argument. Since the argument is separated by a space, to pass more complex expressions you need parentheses. In other common languages you would write `mul(6+7, 8+9)`.
+这样可读性大大提高，你甚至察觉不到函数每次只接收一个实参。由于实参用空格分隔，要传入更复杂的表达式时就需要括号。在其他常见语言中，你会写成 `mul(6+7, 8+9)`。
 
-Given that functions have only one parameter, it is straightforward to use **partial application**:
+鉴于函数只有一个参数，使用**部分应用**（partial application）就非常直接：
 
 ```console
 nix-repl> foo = mul 3
@@ -75,11 +75,11 @@ nix-repl> foo 5
 15
 ```
 
-We stored the function returned by `mul 3` into a variable foo, then reused it.
+我们把 `mul 3` 返回的函数存储到变量 foo 中，然后复用它。
 
-## Argument set
+## 参数集
 
-Now this is a very cool feature of Nix. It is possible to pattern match over a set in the parameter. We write an alternative version of `mul = a: b: a*b` first by using a set as argument, then using pattern matching.
+现在这是 Nix 一个非常酷的特性。可以在参数上对一个集合进行模式匹配。我们先写出 `mul = a: b: a*b` 的另一种版本：先以集合作为实参，再使用模式匹配。
 
 ```console
 nix-repl> mul = s: s.a*s.b
@@ -90,9 +90,9 @@ nix-repl> mul { a = 3; b = 4; }
 12
 ```
 
-In the first case we defined a function that accepts a single parameter. We then access attributes `a` and `b` from the given set. Note how the parentheses-less syntax for function calls is very elegant in this case, instead of doing `mul({ a=3; b=4; })` in other languages.
+第一种情况中，我们定义了一个接收单个参数的函数，然后从传入的集合中访问属性 `a` 和 `b`。注意，函数调用不带括号的语法在这种场景下非常优雅，而在其他语言中你得写成 `mul({ a=3; b=4; })`。
 
-In the second case we defined an argument set. It's like defining a set, except without values. We require that the passed set contains the keys `a` and `b`. Then we can use those `a` and `b` in the function body directly.
+第二种情况中，我们定义了一个参数集（argument set）。它就像定义一个集合，只是没有值。我们要求传入的集合包含键 `a` 和 `b`。然后就可以在函数体中直接使用这些 `a` 和 `b`。
 
 ```console
 nix-repl> mul = { a, b }: a*b
@@ -102,11 +102,11 @@ nix-repl> mul { a = 3; }
 error: anonymous function at (string):1:2 called without required argument `b', at (string):1:1
 ```
 
-Only a set with exactly the attributes required by the function is accepted, nothing more, nothing less.
+只有恰好包含函数所需属性的集合才会被接受，不能多，也不能少。
 
-## Default and variadic attributes
+## 默认属性与可变属性
 
-It is possible to specify **default values** of attributes in the argument set:
+可以在参数集中为属性指定**默认值**：
 
 ```console
 nix-repl> mul = { a, b ? 2 }: a*b
@@ -116,14 +116,14 @@ nix-repl> mul { a = 3; b = 4; }
 12
 ```
 
-Also you can allow passing more attributes (**variadic**) than the expected ones:
+你还可以允许传入比预期更多的属性（**可变参数**，variadic）：
 
 ```console
 nix-repl> mul = { a, b, ... }: a*b
 nix-repl> mul { a = 3; b = 4; c = 2; }
 ```
 
-However, in the function body you cannot access the "c" attribute. The solution is to give a name to the given set with the **@-pattern**:
+不过，在函数体中你无法访问 "c" 这个属性。解决办法是使用 **@-pattern** 给传入的集合起一个名字：
 
 ```console
 nix-repl> mul = s@{ a, b, ... }: a*b*s.c
@@ -131,39 +131,39 @@ nix-repl> mul { a = 3; b = 4; c = 2; }
 24
 ```
 
-That's it, you give a name to the whole parameter with name@ before the set pattern.
+就是这样：在集合模式之前用 name@ 给整个参数起一个名字。
 
-Advantages of using argument sets:
+使用参数集的优点：
 
-- Named unordered arguments: you don't have to remember the order of the arguments.
+- 带名字的无序参数：你不必记住参数的顺序。
 
-- You can pass sets, that adds a whole new layer of flexibility and convenience.
+- 你可以传入集合，这带来了全新层面的灵活性和便利性。
 
-Disadvantages:
+缺点：
 
-- Partial application does not work with argument sets. You have to specify the whole attribute set, not part of it.
+- 部分应用（partial application）不能用于参数集。你必须指定完整的属性集，而不是其中一部分。
 
-You may find similarities with [Python \*\*kwargs](https://docs.python.org/3/faq/programming.html#how-can-i-pass-optional-or-keyword-parameters-from-one-function-to-another).
+你可能会觉得它与 [Python 的 \*\*kwargs](https://docs.python.org/3/faq/programming.html#how-can-i-pass-optional-or-keyword-parameters-from-one-function-to-another) 有相似之处。
 
-## Imports
+## 导入
 
-The `import` function is built-in and provides a way to parse a `.nix` file. The natural approach is to define each component in a `.nix` file, then compose by importing these files.
+`import` 函数是内置的，它提供了解析 `.nix` 文件的方式。自然的做法是：把每个组件定义在一个 `.nix` 文件中，然后通过导入这些文件来进行组合。
 
-Let's start with the bare metal.
+我们从最基础的开始。
 
-`a.nix`:
+`a.nix`：
 
 ```nix
 3
 ```
 
-`b.nix`:
+`b.nix`：
 
 ```nix
 4
 ```
 
-`mul.nix`:
+`mul.nix`：
 
 ```nix
 a: b: a*b
@@ -177,9 +177,9 @@ nix-repl> mul a b
 12
 ```
 
-Yes it's really that simple. You import a file, and it gets parsed as an expression. Note that the scope of the imported file does not inherit the scope of the importer.
+是的，就是这么简单。你导入一个文件，它就被解析为一个表达式。注意，被导入文件的作用域不会继承导入者的作用域。
 
-`test.nix`:
+`test.nix`：
 
 ```nix
 x
@@ -190,9 +190,9 @@ nix-repl> let x = 5; in import ./test.nix
 error: undefined variable `x' at /home/lethal/test.nix:1:1
 ```
 
-So how do we pass information to the module? Use functions, like we did with `mul.nix`. A more complex example:
+那么如何向模块传递信息呢？使用函数，就像我们在 `mul.nix` 中做的那样。一个更复杂的例子：
 
-`test.nix`:
+`test.nix`：
 
 ```nix
 { a, b ? 3, trueMsg ? "yes", falseMsg ? "no" }:
@@ -207,16 +207,16 @@ trace: ok
 true
 ```
 
-Explaining:
+解释一下：
 
-- In `test.nix` we return a function. It accepts a set, with default attributes `b`, `trueMsg` and `falseMsg`.
+- 在 `test.nix` 中，我们返回一个函数。它接收一个集合，其中属性 `b`、`trueMsg` 和 `falseMsg` 有默认值。
 
-- `builtins.trace` is a [built-in function](https://nix.dev/manual/nix/stable/language/builtins) that takes two arguments. The first is the message to display, the second is the value to return. It's usually used for debugging purposes.
+- `builtins.trace` 是一个[内置函数](https://nix.dev/manual/nix/stable/language/builtins)，它接收两个参数：第一个是要显示的消息，第二个是要返回的值。它通常用于调试目的。
 
-- Then we import `test.nix`, and call the function with that set.
+- 然后我们导入 `test.nix`，并用那个集合调用该函数。
 
-So when is the message shown? Only when it needs to be evaluated.
+那么消息什么时候显示？只有在它需要被求值的时候。
 
-## Next pill
+## 下一篇药丸
 
-...we will finally write our first derivation.
+……我们终于要编写我们的第一个 derivation 了。

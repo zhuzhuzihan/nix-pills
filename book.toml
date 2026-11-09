@@ -1,13 +1,13 @@
 [book]
-title = "Nix Pills"
+title = "Nix Pills 中文版"
 authors = ["Luca Bruno"]
-language = "en"
+language = "zh"
 src = "pills"
 
 [output.html]
 additional-css = ["custom.css"]
-edit-url-template = "https://github.com/NixOS/nix-pills/tree/master/{path}"
-git-repository-url = "https://github.com/NixOS/nix-pills"
+edit-url-template = "https://github.com/zhuzhuzihan/nix-pills/tree/master/{path}"
+git-repository-url = "https://github.com/zhuzhuzihan/nix-pills"
 
 [output.html.redirect]
 "pr01.html" = "00-preface.html"

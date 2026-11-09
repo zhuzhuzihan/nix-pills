@@ -1,16 +1,16 @@
-# Nixpkgs Overriding Packages
+# 在 Nixpkgs 中覆盖软件包
 
-Welcome to the 17th Nix pill. In the previous [16th](16-nixpkgs-parameters.md) pill we have started to dive into the [nixpkgs repository](http://github.com/NixOS/nixpkgs). `Nixpkgs` is a function, and we've looked at some parameters like `system` and `config`.
+欢迎来到第 17 篇 Nix 药丸。在上一篇[第 16 篇](16-nixpkgs-parameters.md)药丸中，我们开始深入 [nixpkgs 仓库](http://github.com/NixOS/nixpkgs)。`Nixpkgs` 是一个函数，我们已经看过一些参数，比如 `system` 和 `config`。
 
-Today we'll talk about a special attribute: `config.packageOverrides`. Overriding packages in a set with fixed point can be considered another design pattern in nixpkgs.
+今天我们要讨论一个特殊的属性：`config.packageOverrides`。用不动点（fixed point）来覆盖（override）一个集合中的软件包，可以视为 nixpkgs 中的另一种设计模式。
 
-## Overriding a package
+## 覆盖一个软件包
 
-Recall the override design pattern from the [nix pill 14](14-override-design-pattern.md). Instead of calling a function with parameters directly, we make the call (function + parameters) overridable.
+回顾[第 14 篇药丸](14-override-design-pattern.md)中的 override 设计模式：我们不直接带着参数调用函数，而是让这次调用（函数 + 参数）可以被覆盖。
 
-We put the override function in the returned attribute set of the original function call.
+我们把 override 函数放进原始函数调用所返回的属性集合中。
 
-Take for example `graphviz`. It has an input parameter `xorg`. If it's null, then `graphviz` will build without X support.
+以 `graphviz` 为例。它有一个输入参数 `xorg`。如果它是 null，那么 `graphviz` 将在不支持 X 的情况下构建。
 
 ```console
 $ nix repl
@@ -19,13 +19,13 @@ Added 4360 variables.
 nix-repl> :b graphviz.override { withXorg = false; }
 ```
 
-This will build `graphviz` without X support, it's as simple as that.
+这会构建一个不带 X 支持的 `graphviz`，就是这么简单。
 
-However, let's say a package `P` depends on `graphviz`, how do we make `P` depend on the new `graphviz` without X support?
+然而，假设有一个软件包 `P` 依赖 `graphviz`，我们如何让 `P` 依赖这个新的不带 X 支持的 `graphviz` 呢？
 
-## In an imperative world...
+## 在命令式世界里……
 
-...you could do something like this:
+……你可能会这样做：
 
 ```nix
 pkgs = import <nixpkgs> {};
@@ -33,17 +33,17 @@ pkgs.graphviz = pkgs.graphviz.override { withXorg = false; };
 build(pkgs.P)
 ```
 
-Given `pkgs.P` depends on `pkgs.graphviz`, it's easy to build `P` with the replaced `graphviz`. In a pure functional language it's not that easy because you can assign to variables only once.
+如果 `pkgs.P` 依赖 `pkgs.graphviz`，那么用替换后的 `graphviz` 构建 `P` 就很容易。但在纯函数式语言里就没那么简单了，因为变量只能赋值一次。
 
-## Fixed point
+## 不动点
 
-The fixed point with lazy evaluation is crippling but about necessary in a language like Nix. It lets us achieve something similar to what we'd do imperatively.
+在 Nix 这样的语言中，配合惰性求值的不动点虽然令人抓狂，但几乎是必需的。它让我们能够实现与命令式做法类似的效果。
 
-Follows the definition of fixed point in [nixpkgs](https://github.com/NixOS/nixpkgs/blob/f224a4f1b32b3e813783d22de54e231cd8ea2448/lib/fixed-points.nix#L19):
+下面是 [nixpkgs](https://github.com/NixOS/nixpkgs/blob/f224a4f1b32b3e813783d22de54e231cd8ea2448/lib/fixed-points.nix#L19) 中不动点的定义：
 
 ```nix
 {
-  # Take a function and evaluate it with its own returned value.
+  # 接收一个函数，并用它自己返回的值来对它求值。
   fix =
     f:
     let
@@ -53,9 +53,9 @@ Follows the definition of fixed point in [nixpkgs](https://github.com/NixOS/nixp
 }
 ```
 
-It's a function that accepts a function `f`, calls `f result` on the result just returned by `f result` and returns it. In other words it's `f(f(f(....`
+这是一个接受函数 `f` 的函数，它对刚由 `f result` 返回的结果再调用 `f result`，然后返回它。换句话说，它就是 `f(f(f(....`。
 
-At first sight, it's an infinite loop. With lazy evaluation it isn't, because the call is done only when needed.
+乍一看，这是一个无限循环。但在惰性求值下并不是，因为调用只在需要时才发生。
 
 ```console
 nix-repl> fix = f: let result = f result; in result
@@ -64,21 +64,21 @@ nix-repl> fix pkgs
 { a = 3; b = 4; c = 7; }
 ```
 
-Without the `rec` keyword, we were able to refer to `a` and `b` of the same set.
+不借助 `rec` 关键字，我们也能在同一个集合中引用 `a` 和 `b`。
 
-- First `pkgs` gets called with an unevaluated thunk `(pkgs(pkgs(...)`
+- 首先 `pkgs` 被一个未求值的 thunk 调用 `(pkgs(pkgs(...)`
 
-- To set the value of `c` then `self.a` and `self.b` are evaluated.
+- 然后为了求出 `c` 的值，`self.a` 和 `self.b` 被求值。
 
-- The `pkgs` function gets called again to get the value of `a` and `b`.
+- `pkgs` 函数被再次调用以取得 `a` 和 `b` 的值。
 
-The trick is that `c` is not needed to be evaluated in the inner call, thus it doesn't go in an infinite loop.
+诀窍在于，内层调用并不需要求值 `c`，因此不会陷入无限循环。
 
-Won't go further with the explanation here. A good post about fixed point and Nix can be [found here](http://r6.ca/blog/20140422T142911Z.html).
+这里就不再深入解释了。关于不动点与 Nix 的一篇好文章可以[在这里找到](http://r6.ca/blog/20140422T142911Z.html)。
 
-### Overriding a set with fixed point
+### 用不动点覆盖一个集合
 
-Given that `self.a` and `self.b` refer to the passed set and not to the literal set in the function, we're able to override both `a` and `b` and get a new value for `c`:
+由于 `self.a` 和 `self.b` 引用的是传入的集合，而不是函数中的字面集合，我们能够覆盖 `a` 和 `b`，并得到 `c` 的新值：
 
 ```console
 nix-repl> overrides = { a = 1; b = 2; }
@@ -88,54 +88,54 @@ nix-repl> let newpkgs = pkgs (newpkgs // overrides); in newpkgs // overrides
 { a = 1; b = 2; c = 3; }
 ```
 
-In the first case we computed pkgs with the overrides, in the second case we also included the overridden attributes in the result.
+第一种情况下我们计算了带 override 的 pkgs，第二种情况下我们还把被覆盖的属性包含进了结果中。
 
-## Overriding nixpkgs packages
+## 覆盖 nixpkgs 软件包
 
-We've seen how to override attributes in a set such that they get recursively picked by dependent attributes. This approach can be used for derivations too, after all `nixpkgs` is a giant set of attributes that depend on each other.
+我们已经看到如何覆盖集合中的属性，使得依赖它们的属性会递归地取到覆盖后的值。这种方法同样适用于 derivation（派生），毕竟 `nixpkgs` 就是一个巨大的、彼此相互依赖的属性集合。
 
-To do this, `nixpkgs` offers `config.packageOverrides`. So `nixpkgs` returns a fixed point of the package set, and `packageOverrides` is used to inject the overrides.
+为此，`nixpkgs` 提供了 `config.packageOverrides`。也就是说，`nixpkgs` 返回的是软件包集合的不动点，而 `packageOverrides` 用来注入 override。
 
-Create a `config.nix` file like this somewhere:
+在某个地方创建一个 `config.nix` 文件，内容如下：
 
 ```nix
 {
     packageOverrides = pkgs: {
     graphviz = pkgs.graphviz.override {
-      # disable xorg support
+      # 禁用 xorg 支持
       withXorg = false;
     };
   };
 }
 ```
 
-Now we can build e.g. `asciidoc-full` and it will automatically use the overridden `graphviz`:
+现在我们可以构建例如 `asciidoc-full`，它会自动使用被覆盖的 `graphviz`：
 
 ```console
 nix-repl> pkgs = import <nixpkgs> { config = import ./config.nix; }
 nix-repl> :b pkgs.asciidoc-full
 ```
 
-Note how we pass the `config` with `packageOverrides` when importing `nixpkgs`. Then `pkgs.asciidoc-full` is a derivation that has `graphviz` input (`pkgs.asciidoc` is the lighter version and doesn't use `graphviz` at all).
+注意我们在导入 `nixpkgs` 时如何传入带有 `packageOverrides` 的 `config`。然后 `pkgs.asciidoc-full` 是一个以 `graphviz` 为输入的 derivation（`pkgs.asciidoc` 是更轻量的版本，完全不使用 `graphviz`）。
 
-Since there's no version of `asciidoc` with `graphviz` without X support in the binary cache, Nix will recompile the needed stuff for you.
+由于二进制缓存中没有「`graphviz` 不带 X 支持」版本的 `asciidoc`，Nix 会为你重新编译所需的内容。
 
-## The \~/.config/nixpkgs/config.nix file
+## \~/.config/nixpkgs/config.nix 文件
 
-In the previous pill we already talked about this file. The above `config.nix` that we just wrote could be the content of `~/.config/nixpkgs/config.nix` (or the deprecated location `~/.nixpkgs/config.nix`).
+在上一篇药丸中我们已经讨论过这个文件。我们刚写的上述 `config.nix` 可以作为 `~/.config/nixpkgs/config.nix`（或已弃用的位置 `~/.nixpkgs/config.nix`）的内容。
 
-Instead of passing it explicitly whenever we import `nixpkgs`, it will be automatically [imported by nixpkgs](https://github.com/NixOS/nixpkgs/blob/32c523914fdb8bf9cc7912b1eba023a8daaae2e8/pkgs/top-level/impure.nix#L28).
+这样就不必在每次导入 `nixpkgs` 时显式传入它，它会[由 nixpkgs 自动导入](https://github.com/NixOS/nixpkgs/blob/32c523914fdb8bf9cc7912b1eba023a8daaae2e8/pkgs/top-level/impure.nix#L28)。
 
-## Conclusion
+## 结论
 
-We've learned about a new design pattern: using fixed point for overriding packages in a package set.
+我们学习了一种新的设计模式：使用不动点来覆盖软件包集合中的软件包。
 
-Whereas in an imperative setting, like with other package managers, a library is installed replacing the old version and applications will use it, in Nix it's not that straight and simple. But it's more precise.
+在命令式环境（比如其他软件包管理器）中，安装库时会替换旧版本，应用程序会使用新库；而在 Nix 中，事情并非如此直接简单，但它更精确。
 
-Nix applications will depend on specific versions of libraries, hence the reason why we have to recompile `asciidoc` to use the new `graphviz` library.
+Nix 应用程序会依赖特定版本的库，这就是为什么我们必须重新编译 `asciidoc` 才能使用新的 `graphviz` 库。
 
-The newly built `asciidoc` will depend on the new `graphviz`, and old `asciidoc` will keep using the old `graphviz` undisturbed.
+新构建的 `asciidoc` 会依赖新的 `graphviz`，而旧的 `asciidoc` 会继续不受干扰地使用旧的 `graphviz`。
 
-## Next pill
+## 下一篇药丸
 
-...we will stop studying `nixpkgs` for a moment and talk about store paths. How does Nix compute the path in the store where to place the result of builds? How to add files to the store for which we have an integrity hash?
+……我们将暂停对 `nixpkgs` 的研究，谈谈存储路径（store path）。Nix 是如何计算出在 Nix store 中放置构建结果的路径的？如何把一个我们拥有完整性哈希的文件添加进 Nix store？

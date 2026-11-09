@@ -1,37 +1,37 @@
-# Working Derivation
+# 一个能工作的 derivation
 
-## Introduction
+## 简介
 
-Welcome to the seventh nix pill. In the previous [sixth pill](06-our-first-derivation.md) we introduced the notion of derivation in the Nix language --- how to define a raw derivation and how to (try to) build it.
+欢迎来到第七篇 Nix 药丸。在上一篇[第六篇药丸](06-our-first-derivation.md)中，我们介绍了 Nix 语言中 derivation（派生）的概念——如何定义一个原始的 derivation，以及如何（尝试）构建它。
 
-In this post we continue along the path, by creating a derivation that actually builds something. Then, we try to package a real program: we compile a simple C file and create a derivation out of it, given a blessed toolchain.
+在这篇文章中，我们沿着这条路继续前进，创建一个真正能构建出东西的 derivation。然后，我们尝试打包一个真实的程序：给定一套现成的工具链，我们编译一个简单的 C 文件，并据此创建一个 derivation。
 
-I remind you how to enter the Nix environment: `source ~/.nix-profile/etc/profile.d/nix.sh`
+再次提醒进入 Nix 环境的方法：`source ~/.nix-profile/etc/profile.d/nix.sh`
 
-## Using a script as a builder
+## 用脚本作为 builder
 
-What's the easiest way to run a sequence of commands for building something? A bash script. We'll write a custom bash script and use it as our builder. Given a `builder.sh`, we want the derivation to run `bash builder.sh`.
+运行一串命令来构建东西，最简单的方式是什么？一个 bash 脚本。我们将编写一个自定义的 bash 脚本，并把它用作我们的 builder。给定一个 `builder.sh`，我们希望 derivation 运行 `bash builder.sh`。
 
-We won't use [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in `builder.sh`, because at the time we are writing it we do not know the path to bash in the nix store. Yes, even bash is in the nix store, everything is there.
+我们不会在 `builder.sh` 中使用 [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix))，因为在编写它的时候，我们并不知道 nix store 中 bash 的路径。是的，连 bash 也在 nix store 里，所有东西都在那里。
 
-We also won't use `/usr/bin/env`, because then we lose the cool stateless property of Nix. Not to mention that `PATH` gets cleared when building, so it wouldn't find `bash` anyway.
+我们也不会使用 `/usr/bin/env`，因为那样就会失去 Nix 无状态（stateless）这一酷炫特性。更不用提构建时 `PATH` 会被清空，反正也找不到 `bash`。
 
-In summary, we want the builder to be `bash`, and give it `builder.sh` as an argument. Turns out the "derivation" function accepts an optional `args` attribute which is used to pass arguments to the builder executable.
+总结一下：我们希望 builder 是 `bash`，并把 `builder.sh` 作为参数传给它。事实证明，"derivation" 函数接受一个可选的 `args` 属性，用于向 builder 可执行文件传递参数。
 
-First of all, let's write our `builder.sh` in the current directory:
+首先，在当前目录写下我们的 `builder.sh`：
 
 ```sh
 declare -xp
 echo foo > $out
 ```
 
-The command `declare -xp` lists exported variables (`declare` is a builtin bash function). As we covered in the previous pill, Nix computes the output path of the derivation. The resulting `.drv` file contains a list of environment variables passed to the builder. One of these is `$out`.
+命令 `declare -xp` 列出已导出的变量（`declare` 是一个 bash 内置函数）。正如上一篇药丸中所讲的，Nix 会计算 derivation 的输出路径。生成的 `.drv` 文件包含一份传递给 builder 的环境变量列表，其中之一就是 `$out`。
 
-What we have to do is create something in the path `$out`, be it a file or a directory. In this case we are creating a file.
+我们要做的，就是在 `$out` 这个路径下创建点什么，无论是一个文件还是一个目录。这里我们创建的是一个文件。
 
-In addition, we print out the environment variables during the build process. We cannot use env for this, because env is part of coreutils and we don't have a dependency to it yet. We only have bash for now.
+另外，我们会在构建过程中打印出环境变量。我们不能用 env 来做这件事，因为 env 属于 coreutils，而我们还没有对它的依赖。目前我们只有 bash。
 
-Like for coreutils in the previous pill, we get a blessed bash for free from our magic nixpkgs stuff:
+就像上一篇药丸中的 coreutils 一样，我们从神奇的 nixpkgs 那里免费获得一个现成的 bash：
 
 ```console
 nix-repl> :l <nixpkgs>
@@ -40,7 +40,7 @@ nix-repl> "${bash}"
 "/nix/store/ihmkc7z2wqk3bbipfnlh0yjrlfkkgnv6-bash-4.2-p45"
 ```
 
-So with the usual trick, we can refer to bin/bash and create our derivation:
+于是用惯用的技巧，我们就可以引用 bin/bash 并创建我们的 derivation：
 
 ```console
 nix-repl> d = derivation { name = "foo"; builder = "${bash}/bin/bash"; args = [ ./builder.sh ]; system = builtins.currentSystem; }
@@ -51,13 +51,13 @@ this derivation produced the following outputs:
   out -> /nix/store/gczb4qrag22harvv693wwnflqy7lx5pb-foo
 ```
 
-We did it! The contents of `/nix/store/w024zci0x1hh1wj6gjq0jagkc1sgrf5r-foo` is really foo. We've built our first derivation.
+我们做到了！`/nix/store/w024zci0x1hh1wj6gjq0jagkc1sgrf5r-foo` 的内容确实是 foo。我们构建了第一个 derivation。
 
-Note that we used `./builder.sh` and not `"./builder.sh"`. This way, it is parsed as a path, and Nix performs some magic which we will cover later. Try using the string version and you will find that it cannot find `builder.sh`. This is because it tries to find it relative to the temporary build directory.
+注意，我们使用的是 `./builder.sh` 而不是 `"./builder.sh"`。这样它会被解析为一个路径，Nix 会施一些我们稍后会讲到的魔法。试试用字符串版本，你会发现它找不到 `builder.sh`。这是因为它会相对于临时构建目录去寻找它。
 
-## The builder environment
+## builder 的环境
 
-We can use `nix-store --read-log` to see the logs our builder produced:
+我们可以用 `nix-store --read-log` 来查看 builder 产生的日志：
 
 ```console
 $ nix-store --read-log /nix/store/gczb4qrag22harvv693wwnflqy7lx5pb-foo
@@ -80,25 +80,25 @@ declare -x out="/nix/store/gczb4qrag22harvv693wwnflqy7lx5pb-foo"
 declare -x system="x86_64-linux"
 ```
 
-Let's inspect those environment variables printed during the build process.
+让我们检视一下构建过程中打印出的这些环境变量。
 
-- `$HOME` is not your home directory, and `/homeless-shelter` doesn't exist at all. We force packages not to depend on `$HOME` during the build process.
+- `$HOME` 不是你的 home 目录，而且 `/homeless-shelter` 完全不存在。我们强迫软件包在构建过程中不依赖 `$HOME`。
 
-- `$PATH` plays the same game as `$HOME`
+- `$PATH` 和 `$HOME` 玩的是同一套把戏。
 
-- `$NIX_BUILD_CORES` and `$NIX_STORE` are [nix configuration options](https://nix.dev/manual/nix/stable/command-ref/conf-file)
+- `$NIX_BUILD_CORES` 和 `$NIX_STORE` 是 [nix 配置选项](https://nix.dev/manual/nix/stable/command-ref/conf-file)。
 
-- `$PWD` and `$TMP` clearly show that nix created a temporary build directory
+- `$PWD` 和 `$TMP` 清楚地表明 nix 创建了一个临时构建目录。
 
-- Then `$builder`, `$name`, `$out`, and `$system` are variables set due to the .drv file's contents.
+- 然后 `$builder`、`$name`、`$out` 和 `$system` 是由 .drv 文件的内容设置的变量。
 
-And that's how we were able to use `$out` in our derivation and put stuff in it. It's like Nix reserved a slot in the nix store for us, and we must fill it.
+这就是我们能在 derivation 中使用 `$out` 并往里面放东西的原因。这就像是 Nix 在 nix store 中为我们预留了一个槽位，而我们必须把它填上。
 
-In terms of autotools, `$out` will be the `--prefix` path. Yes, not the make `DESTDIR`, but the `--prefix`. That's the essence of stateless packaging. You don't install the package in a global common path under `/`, you install it in a local isolated path under your nix store slot.
+用 autotools 的术语来说，`$out` 就是 `--prefix` 路径。是的，不是 make 的 `DESTDIR`，而是 `--prefix`。这就是无状态打包的精髓。你不是把软件包安装到 `/` 下的某个全局公共路径，而是把它安装到你在 nix store 中那个槽位下的本地隔离路径里。
 
-## The .drv contents
+## .drv 的内容
 
-We added something else to the derivation this time: the args attribute. Let's see how this changed the .drv compared to the previous pill:
+这一次我们给 derivation 添加了别的东西：args 属性。让我们看看与上一篇药丸相比，这给 .drv 带来了什么变化：
 
 ```console
 $ nix derivation show /nix/store/i76pr1cz0za3i9r6xq518bqqvd2raspw-foo.drv
@@ -132,13 +132,13 @@ $ nix derivation show /nix/store/i76pr1cz0za3i9r6xq518bqqvd2raspw-foo.drv
 }
 ```
 
-Much like the usual .drv, except that there's a list of arguments in there passed to the builder (bash) with `builder.sh`... In the nix store..? Nix automatically copies files or directories needed for the build into the store to ensure that they are not changed during the build process and that the deployment is stateless and independent of the building machine. `builder.sh` is not only in the arguments passed to the builder, it's also in the input sources.
+与通常的 .drv 几乎一样，只是其中多了一份传递给 builder（bash）的参数列表，里面有 `builder.sh`……在 nix store 里..？Nix 会自动把构建所需的文件或目录复制进 store，以确保它们在构建过程中不会被改动，并确保部署是无状态的、与构建机器无关的。`builder.sh` 不仅出现在传给 builder 的参数中，还出现在输入源（input sources）里。
 
-Given that `builder.sh` is a plain file, it has no .drv associated with it. The store path is computed based on the filename and on the hash of its contents. Store paths are covered in detail in [a later pill](18-nix-store-paths.md).
+鉴于 `builder.sh` 是一个普通文件，它没有与之关联的 .drv。其存储路径是根据文件名和其内容的哈希计算出来的。存储路径将在[后面某篇药丸](18-nix-store-paths.md)中详细讲解。
 
-## Packaging a simple C program
+## 打包一个简单的 C 程序
 
-Start off by writing a simple C program called `simple.c`:
+先写一个名为 `simple.c` 的简单 C 程序：
 
 ```c
 #include <stdio.h>
@@ -148,7 +148,7 @@ void main() {
 }
 ```
 
-And its `simple_builder.sh`:
+以及它的 `simple_builder.sh`：
 
 ```sh
 export PATH="$coreutils/bin:$gcc/bin"
@@ -156,7 +156,7 @@ mkdir $out
 gcc -o $out/simple $src
 ```
 
-Don't worry too much about where those variables come from yet; let's write the derivation and build it:
+暂时不用太操心这些变量从哪里来；先写下 derivation 并构建它：
 
 ```console
 nix-repl> :l <nixpkgs>
@@ -167,25 +167,25 @@ this derivation produced the following outputs:
   out -> /nix/store/ni66p4jfqksbmsl616llx3fbs1d232d4-simple
 ```
 
-Now you can run `/nix/store/ni66p4jfqksbmsl616llx3fbs1d232d4-simple/simple` in your shell.
+现在你可以在 shell 中运行 `/nix/store/ni66p4jfqksbmsl616llx3fbs1d232d4-simple/simple` 了。
 
-## Explanation
+## 解析
 
-We added two new attributes to the derivation call, `gcc` and `coreutils`. In `gcc = gcc;`, the name on the left is the name in the derivation set, and the name on the right refers to the gcc derivation from nixpkgs. The same applies for coreutils.
+我们在 derivation 调用中新增了两个属性：`gcc` 和 `coreutils`。在 `gcc = gcc;` 中，左边的名字是 derivation 集合中的属性名，右边的名字引用的是来自 nixpkgs 的 gcc derivation。coreutils 同理。
 
-We also added the `src` attribute, nothing magical --- it's just a name, to which the path `./simple.c` is assigned. Like `simple-builder.sh`, `simple.c` will be added to the store.
+我们还添加了 `src` 属性，没有什么魔法——它只是一个名字，被赋值为路径 `./simple.c`。与 `simple-builder.sh` 一样，`simple.c` 也会被添加进 store。
 
-The trick: every attribute in the set passed to `derivation` will be converted to a string and passed to the builder as an environment variable. This is how the builder gains access to coreutils and gcc: when converted to strings, the derivations evaluate to their output paths, and appending `/bin` to these leads us to their binaries.
+诀窍在于：传给 `derivation` 的集合中的每个属性都会被转换成字符串，并作为环境变量传递给 builder。builder 正是这样获得对 coreutils 和 gcc 的访问能力的：当被转换为字符串时，这些 derivation 求值结果就是它们的输出路径，再在后面拼上 `/bin`，就找到了它们的二进制程序。
 
-The same goes for the `src` variable. `$src` is the path to `simple.c` in the nix store. As an exercise, pretty print the .drv file. You'll see `simple_builder.sh` and `simple.c` listed in the input derivations, along with bash, gcc and coreutils .drv files. The newly added environment variables described above will also appear.
+`src` 变量也是一样。`$src` 是 `simple.c` 在 nix store 中的路径。作为练习，你可以把 .drv 文件漂亮地打印出来。你会看到 `simple_builder.sh` 和 `simple.c` 出现在输入源中，还有 bash、gcc 和 coreutils 的 .drv 文件。上述新增的环境变量也会一并出现。
 
-In `simple_builder.sh` we set the `PATH` for gcc and coreutils binaries, so that our build script can find the necessary utilities like mkdir and gcc.
+在 `simple_builder.sh` 中，我们为 gcc 和 coreutils 的二进制程序设置了 `PATH`，这样我们的构建脚本才能找到 mkdir 和 gcc 等必要的工具。
 
-We then create `$out` as a directory and place the binary inside it. Note that gcc is found via the `PATH` environment variable, but it could equivalently be referenced explicitly using `$gcc/bin/gcc`.
+然后我们把 `$out` 创建为一个目录，并把二进制文件放进去。注意，gcc 是通过 `PATH` 环境变量找到的，但同样可以显式地用 `$gcc/bin/gcc` 来引用。
 
-## Enough of `nix repl`
+## 告别 `nix repl`
 
-Drop out of nix repl and write a file `simple.nix`:
+退出 nix repl，写一个文件 `simple.nix`：
 
 ```nix
 let
@@ -202,23 +202,23 @@ derivation {
 }
 ```
 
-Now you can build it with `nix-build simple.nix`. This will create a symlink `result` in the current directory, pointing to the out path of the derivation.
+现在你可以用 `nix-build simple.nix` 来构建它。这会在当前目录创建一个符号链接 `result`，指向该 derivation 的 out path。
 
-nix-build does two jobs:
+nix-build 做两件事：
 
-- [nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate): parse and evaluate `simple.nix` and return the .drv file corresponding to the parsed derivation set
+- [nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate)：解析并求值 `simple.nix`，返回与解析出的 derivation 集合对应的 .drv 文件。
 
-- [`nix-store -r`](https://nix.dev/manual/nix/stable/command-ref/nix-store/realise): realise the .drv file, which actually builds it.
+- [`nix-store -r`](https://nix.dev/manual/nix/stable/command-ref/nix-store/realise)：实现（realise）该 .drv 文件，也就是真正构建它。
 
-Finally, it creates the symlink.
+最后，它会创建那个符号链接。
 
-In the second line of `simple.nix`, we have an `import` function call. Recall that `import` accepts one argument, a nix file to load. In this case, the contents of the file evaluate to a function.
+在 `simple.nix` 的第二行，有一个 `import` 函数调用。回顾一下：`import` 接受一个参数，即要加载的 nix 文件。在这个例子里，该文件的内容求值结果是一个函数。
 
-Afterwards, we call the function with the empty set. We saw this already in [the fifth pill](05-functions-and-imports.md). To reiterate: `import <nixpkgs> {}` is calling two functions, not one. Reading it as `(import <nixpkgs>) {}` makes this clearer.
+随后，我们用空集合调用这个函数。我们在[第五篇药丸](05-functions-and-imports.md)中已经见过这种写法。再强调一次：`import <nixpkgs> {}` 是在调用两个函数，而不是一个。把它读作 `(import <nixpkgs>) {}` 会更清楚。
 
-The value returned by the nixpkgs function is a set; more specifically, it's a set of derivations. Calling `import <nixpkgs> {}` into a `let`-expression creates the local variable `pkgs` and brings it into scope. This has an effect similar to the `:l <nixpkgs>` we used in nix repl, in that it allows us to easily access derivations such as `bash`, `gcc`, and `coreutils`, but those derivations will have to be explicitly referred to as members of the `pkgs` set (e.g., `pkgs.bash` instead of just `bash`).
+nixpkgs 函数返回的值是一个集合；更具体地说，是一个由 derivation 组成的集合。把 `import <nixpkgs> {}` 放进 `let` 表达式会创建局部变量 `pkgs` 并把它引入作用域。它的效果类似于我们在 nix repl 中使用的 `:l <nixpkgs>`，让我们可以方便地访问 `bash`、`gcc` 和 `coreutils` 等 derivation，只是这些 derivation 必须显式地作为 `pkgs` 集合的成员来引用（例如 `pkgs.bash`，而不是只写 `bash`）。
 
-Below is a revised version of the `simple.nix` file, using the `inherit` keyword:
+下面是使用 `inherit` 关键字改写后的 `simple.nix`：
 
 ```nix
 let
@@ -234,12 +234,12 @@ derivation {
 }
 ```
 
-Here we also take the opportunity to introduce the [`inherit` keyword](https://nix.dev/manual/nix/stable/language/constructs#inheriting-attributes). `inherit foo;` is equivalent to `foo = foo;`. Similarly, `inherit gcc coreutils;` is equivalent to `gcc = gcc; coreutils = coreutils;`. Lastly, `inherit (pkgs) gcc coreutils;` is equivalent to `gcc = pkgs.gcc; coreutils = pkgs.coreutils;`.
+这里我们也顺便介绍一下 [`inherit` 关键字](https://nix.dev/manual/nix/stable/language/constructs#inheriting-attributes)。`inherit foo;` 等价于 `foo = foo;`。类似地，`inherit gcc coreutils;` 等价于 `gcc = gcc; coreutils = coreutils;`。最后，`inherit (pkgs) gcc coreutils;` 等价于 `gcc = pkgs.gcc; coreutils = pkgs.coreutils;`。
 
-This syntax only makes sense inside sets. There's no magic involved, it's simply a convenience to avoid repeating the same name for both the attribute name and the value in scope.
+这种语法只在集合内有意义。这里没有任何魔法，只是一种便利写法，避免为属性名和作用域中的值重复书写同一个名字。
 
-## Next pill
+## 下一篇药丸
 
-We will generalize the builder. You may have noticed that we wrote two separate `builder.sh` scripts in this post. We would like to have a generic builder script instead, especially since each build script goes in the nix store: a bit of a waste.
+我们将把 builder 泛化。你可能已经注意到，这篇文章里我们写了两个各自独立的 `builder.sh` 脚本。我们更希望有一个通用的构建脚本，尤其是因为每个构建脚本都会进入 nix store：有点浪费。
 
-_Is it really that hard to package stuff in Nix? No_, here we're studying the fundamentals of Nix.
+_在 Nix 中打包东西真的有那么难吗？不难_，我们正在学习的是 Nix 的基本原理。

@@ -1,24 +1,24 @@
-# The Garbage Collector {#garbage-collector}
+# 垃圾回收器 {#garbage-collector}
 
-Welcome to the 11th Nix pill. In the previous [10th pill](10-developing-with-nix-shell.md), we drew a parallel between the isolated build environment provided by `nix-build` and the isolated development shell provided by `nix-shell`. Using `nix-shell` allowed us to debug, modify, and manually build software using an environment that is almost identical to the one provided by `nix-build`.
+欢迎来到第 11 篇 Nix 药丸。在上一篇[第 10 篇药丸](10-developing-with-nix-shell.md)中，我们对比了 `nix-build` 提供的隔离构建环境与 `nix-shell` 提供的隔离开发 shell。借助 `nix-shell`，我们可以在一个与 `nix-build` 提供的环境几乎一致的环境里调试、修改并手动构建软件。
 
-Today, we will stop focusing on packaging and instead look at a critical component of Nix: the garbage collector. When we use Nix tools, we are often building derivations. This includes `.drv` files as well as out paths. These artifacts go in the Nix store and take up space in our storage. Eventually we may wish to free up some space by removing derivations we no longer need. This is the focus of the 11th pill. By default, Nix takes a relatively conservative approach when automatically deciding which derivations are "needed". In this pill, we will also see a technique to conduct more destructive upgrade and deletion operations.
+今天，我们将不再聚焦于打包，而是关注 Nix 的一个关键组件：垃圾回收器。在使用 Nix 工具时，我们经常在构建 derivation（派生），这既包括 `.drv` 文件，也包括输出路径。这些产物会进入 Nix store，占用我们的存储空间。最终我们可能希望通过删除不再需要的 derivation 来释放一些空间。这正是第 11 篇药丸的主题。默认情况下，Nix 在自动判断哪些 derivation 是"需要的"时采取相对保守的策略。在本篇药丸中，我们还将看到一种执行更具破坏性的升级和删除操作的技术。
 
-## How does garbage collection work?
+## 垃圾回收是如何工作的？
 
-Programming languages with garbage collectors use the concept of a set of "garbage collector (or 'GC') roots" to keep track of "live" objects. A GC root is an object that is always considered "live" (unless explicitly removed as GC root). The garbage collection process starts from the GC roots and proceeds by recursively marking object references as "live". All other objects can be collected and deleted.
+带有垃圾回收器的编程语言使用"垃圾回收器（GC）根"（GC roots）的概念来追踪"存活"的对象。GC 根是始终被视为"存活"的对象（除非被显式地移除出 GC 根）。垃圾回收过程从 GC 根出发，递归地将对象引用标记为"存活"。其余所有对象都可以被回收并删除。
 
-Instead of objects, Nix's garbage collection operates on store paths, [with the GC roots themselves being store paths](https://nix.dev/manual/nix/stable/package-management/garbage-collector-roots). . This approach is much more principled than traditional package managers such as `dpkg` or `rpm`, which may leave around unused packages or dangling files.
+Nix 的垃圾回收操作的不是对象，而是存储路径，[GC 根本身就是存储路径](https://nix.dev/manual/nix/stable/package-management/garbage-collector-roots)。与 `dpkg` 或 `rpm` 这类传统软件包管理器相比，这种方式要有原则得多——后者可能会留下无用的软件包或悬空的文件。
 
-The implementation is very simple and transparent to the user. The primary GC roots are stored under `/nix/var/nix/gcroots`. If there is a symlink to a store path, then the linked store path is a GC root.
+其实现对用户来说非常简单且透明。主要的 GC 根存放在 `/nix/var/nix/gcroots` 之下。如果该目录中存在指向某个存储路径的符号链接，那么被链接的存储路径就是一个 GC 根。
 
-Nix allows this directory to have subdirectories: it will simply recursively traverse the subdirectories in search of symlinks to store paths. When a symlink is encountered, its target is added to the list of live store paths.
+Nix 允许这个目录包含子目录：它会简单地递归遍历这些子目录，寻找指向存储路径的符号链接。当遇到一个符号链接时，其目标会被加入存活存储路径的列表。
 
-In summary, Nix maintains a list of GC roots. These roots can then be used to compute a list of all live store paths. Any other store paths are considered dead. Deleting these paths is now straightforward. Nix first moves dead store paths to `/nix/store/trash`, which is an atomic operation. Afterwards, the trash is emptied.
+总结一下：Nix 维护着一个 GC 根列表。这些根随后可用于计算所有存活存储路径的列表。其余的存储路径被视为死路径。接下来删除这些路径就很简单了。Nix 首先把死的存储路径移动到 `/nix/store/trash`，这是一个原子操作。之后，垃圾箱会被清空。
 
-## Playing with the GC
+## 玩转垃圾回收器
 
-Before we begin we first run the [nix garbage collector](https://nix.dev/manual/nix/stable/command-ref/nix-collect-garbage) so that we have a clean setup for our experiments:
+开始之前，我们先运行一下 [Nix 垃圾回收器](https://nix.dev/manual/nix/stable/command-ref/nix-collect-garbage)，以便为后续实验准备一个干净的环境：
 
 ```console
 $ nix-collect-garbage
@@ -29,9 +29,9 @@ note: currently hard linking saves -0.00 MiB
 1169 store paths deleted, 228.43 MiB freed
 ```
 
-If we run the garbage collector again it won't find anything new to delete, as we expect. After running the garbage collector, the nix store only contains paths with references from the GC roots.
+如果我们再次运行垃圾回收器，正如预期的那样，它不会再找到任何可删除的内容。运行垃圾回收器之后，Nix store 中只包含被 GC 根引用的路径。
 
-We now install a new program, `bsd-games`, inspect its store path, and examine its GC root. The `nix-store -q --roots` command is used to query the GC roots that refer to a given derivation. In this case, our current user environment refers to `bsd-games`:
+现在我们安装一个新程序 `bsd-games`，查看它的存储路径，并检查它的 GC 根。`nix-store -q --roots` 命令用于查询引用某个给定 derivation 的 GC 根。在这里，我们当前的用户环境引用了 `bsd-games`：
 
 ```console
 $ nix-env -iA nixpkgs.bsdgames
@@ -44,7 +44,7 @@ $ nix-env --list-generations
    9   2014-08-20 12:44:14   (current)
 ```
 
-Now we remove it and run the garbage collector, and note that `bsd-games` is still in the nix store:
+现在我们卸载它并运行垃圾回收器，注意 `bsd-games` 仍然留在 Nix store 中：
 
 ```console
 $ nix-env -e bsd-games
@@ -55,9 +55,9 @@ $ ls /nix/store/b3lxx3d3ggxcggvjw5n0m1ya1gcrmbyn-bsd-games-2.17
 bin  share
 ```
 
-The old generation is still in the nix store because it is a GC root. As we will see below, all profiles and their generations are automatically GC roots.
+旧的 generation 之所以仍留在 Nix store 中，是因为它是一个 GC 根。正如我们将在下文看到的，所有 profile 及其 generation 都会自动成为 GC 根。
 
-Removing a GC root is simple. In our case, we delete the generation that refers to `bsd-games`, run the garbage collector, and note that `bsd-games` is no longer in the nix store:
+移除一个 GC 根很简单。在我们的例子中，我们删除引用 `bsd-games` 的那个 generation，运行垃圾回收器，然后会发现 `bsd-games` 已不在 Nix store 中：
 
 ```console
 $ rm /nix/var/nix/profiles/default-9-link
@@ -71,15 +71,15 @@ $ ls /nix/store/b3lxx3d3ggxcggvjw5n0m1ya1gcrmbyn-bsd-games-2.17
 ls: cannot access /nix/store/b3lxx3d3ggxcggvjw5n0m1ya1gcrmbyn-bsd-games-2.17: No such file or directory
 ```
 
-Note: `nix-env --list-generations` does not rely on any particular metadata. It is able to list generations based solely on the file names under the profiles directory.
+注意：`nix-env --list-generations` 并不依赖任何特定的元数据。它仅凭 profiles 目录下的文件名就能列出各个 generation。
 
-Note that we removed the link from `/nix/var/nix/profiles`, not from `/nix/var/nix/gcroots`. In addition to the latter, Nix treats `/nix/var/nix/profiles` as a GC root. This is useful because it means that any profile and its generations are GC roots. Other paths are considered GC roots as well; for example, `/run/booted-system` on NixOS. The command `nix-store --gc --print-roots` prints all paths considered as GC roots when running the garbage collector.
+注意，我们删除的是 `/nix/var/nix/profiles` 中的链接，而不是 `/nix/var/nix/gcroots` 中的链接。除了后者之外，Nix 还把 `/nix/var/nix/profiles` 也当作 GC 根。这很有用，因为这意味着任何 profile 及其 generation 都是 GC 根。其他路径同样被视为 GC 根；例如 NixOS 上的 `/run/booted-system`。命令 `nix-store --gc --print-roots` 会打印运行垃圾回收器时所有被视为 GC 根的路径。
 
-## Indirect roots
+## 间接根
 
-Recall that building the GNU `hello` package with `nix-build` produces a `result` symlink in the current directory. Despite the garbage collection done above, the `hello` program is still working. Therefore, it has not been garbage collected. Since there is no other derivation that depends upon the GNU `hello` package, it must be a GC root.
+回顾一下：用 `nix-build` 构建 GNU `hello` 软件包会在当前目录生成一个 `result` 符号链接。尽管做了上面那些垃圾回收，`hello` 程序仍然可以运行。因此，它并没有被垃圾回收。由于没有其他 derivation 依赖 GNU `hello` 软件包，它必定是一个 GC 根。
 
-In fact, `nix-build` automatically adds the `result` symlink as a GC root. Note that this is not the built derivation, but the symlink itself. These GC roots are added under `/nix/var/nix/gcroots/auto`.
+实际上，`nix-build` 会自动把 `result` 符号链接添加为 GC 根。注意，被添加的不是构建出的 derivation，而是这个符号链接本身。这些 GC 根被添加在 `/nix/var/nix/gcroots/auto` 之下。
 
 ```console
 $ ls -l /nix/var/nix/gcroots/auto/
@@ -89,35 +89,35 @@ drwxr-xr-x 3 nix nix 4096 Jul 24 10:38 ../
 lrwxrwxrwx 1 nix nix   16 Jul 31 10:51 xlgz5x2ppa0m72z5qfc78b8wlciwvgiz -> /home/nix/result/
 ```
 
-The name of the GC root symlink is not important to us at this time. What is important is that such a symlink exists and points to `/home/nix/result`. This is called an **indirect GC root**. A GC root is considered indirect if its specification is outside of `/nix/var/nix/gcroots`. In this case, this means that the target of the `result` symlink will not be garbage collected.
+此时 GC 根符号链接的名字对我们来说并不重要。重要的是这样一个符号链接确实存在，并且指向 `/home/nix/result`。这被称为**间接 GC 根**（indirect GC root）。如果一个 GC 根的描述位于 `/nix/var/nix/gcroots` 之外，它就被视为间接根。在我们的场景中，这意味着 `result` 符号链接的目标不会被垃圾回收。
 
-To remove a derivation considered "live" by an indirect GC root, there are two possibilities:
+要移除一个被间接 GC 根视为"存活"的 derivation，有两种途径：
 
-- Remove the indirect GC root from `/nix/var/nix/gcroots/auto`.
+- 从 `/nix/var/nix/gcroots/auto` 中删除该间接 GC 根。
 
-- Remove the `result` symlink.
+- 删除 `result` 符号链接。
 
-In the first case, the derivation will be deleted from the nix store during garbage collection, and `result` becomes a dangling symlink. In the second case, the derivation is removed as well as the indirect root in `/nix/var/nix/gcroots/auto`.
+在第一种情况下，该 derivation 会在垃圾回收过程中从 Nix store 中删除，而 `result` 会变成一个悬空符号链接。在第二种情况下，derivation 被删除，`/nix/var/nix/gcroots/auto` 中的间接根也会随之删除。
 
-Running `nix-collect-garbage` after deleting the GC root or the indirect GC root will remove the derivation from the store.
+在删除 GC 根或间接 GC 根之后运行 `nix-collect-garbage`，就会把该 derivation 从 store 中移除。
 
-## Cleanup everything
+## 清理一切
 
-The main source of software duplication in the nix store comes from GC roots, due to `nix-build` and profile generations. Running `nix-build` results in a GC root for the build that refers to a specific version of specific libraries, such as `glibc`. After an upgrade, we must delete the previous build if we want the garbage collector to remove the corresponding derivation, as well as if we want old dependencies cleaned up.
+Nix store 中软件重复的主要来源是 GC 根，它们来自 `nix-build` 和 profile 的 generation。运行 `nix-build` 会为该次构建产生一个引用特定版本特定库（例如 `glibc`）的 GC 根。升级之后，如果我们希望垃圾回收器移除对应的 derivation，并清理旧的依赖，就必须删除之前的构建产物。
 
-The same holds for profiles. Manipulating the `nix-env` profile will create further generations. Old generations refer to old software, thus increasing duplication in the nix store after an upgrade.
+对 profile 来说也一样。操作 `nix-env` 的 profile 会创建更多的 generation。旧的 generation 引用旧的软件，因此在升级之后会增加 Nix store 中的重复。
 
-Other systems typically "forget" everything about their previous state after an upgrade. With Nix, we can perform this type of upgrade (having Nix remove all old derivations, including old generations), but we do so manually. There are four steps to doing this:
+其他系统通常在升级之后会"遗忘"关于其先前状态的一切。使用 Nix，我们也可以执行这种类型的升级（让 Nix 移除所有旧的 derivation，包括旧的 generation），但需要手动进行。具体分为四步：
 
-- First, we download a new version of the nixpkgs channel, which holds the description of all the software. This is done via `nix-channel --update`.
+- 第一步，下载新版本的 nixpkgs channel，它保存着所有软件的描述。通过 `nix-channel --update` 完成。
 
-- Then we upgrade our installed packages with `nix-env -u`. This will bring us into a new generation with updated software.
+- 第二步，用 `nix-env -u` 升级已安装的软件包。这会把我们带进一个包含更新软件的新 generation。
 
-- Then we remove all the indirect roots generated by `nix-build`: beware, as this will result in dangling symlinks. A smarter strategy would also remove the target of those symlinks.
+- 第三步，删除 `nix-build` 生成的所有间接根：要当心，这会产生悬空符号链接。更聪明的策略是同时删除这些符号链接的目标。
 
-- Finally, the `-d` option of `nix-collect-garbage` is used to delete old generations of all profiles, then collect garbage. After this, you lose the ability to rollback to any previous generation. It is important to ensure the new generation is working well before running this command.
+- 最后，使用 `nix-collect-garbage` 的 `-d` 选项删除所有 profile 的旧 generation，然后进行垃圾回收。此后，你将失去回滚到任何先前 generation 的能力。运行这条命令之前，务必确认新 generation 工作正常。
 
-The four steps are shown below:
+这四步如下所示：
 
 ```console
 $ nix-channel --update
@@ -126,10 +126,10 @@ $ rm /nix/var/nix/gcroots/auto/*
 $ nix-collect-garbage -d
 ```
 
-## Conclusion
+## 结论
 
-Garbage collection in Nix is a powerful mechanism to clean up your system. The `nix-store` commands allow us to know why a certain derivation is present in the nix store, and whether or not it is eligible for garbage collection. We also saw how to conduct more destructive deletion and upgrade operations.
+Nix 中的垃圾回收是一个清理系统的强大机制。借助 `nix-store` 命令，我们可以弄清某个 derivation 为什么存在于 Nix store 中，以及它是否符合垃圾回收的条件。我们还学习了如何执行更具破坏性的删除与升级操作。
 
-## Next pill
+## 下一篇药丸
 
-In the next pill, we will package another project and introduce the "inputs" design pattern. We've only played with a single derivation until now; however we'd like to start organizing a small repository of software. The "inputs" pattern is widely used in nixpkgs; it allows us to decouple derivations from the repository itself and increase customization opportunities.
+在下一篇药丸中，我们将打包另一个项目，并介绍 "inputs" 设计模式。到目前为止我们只接触了单个 derivation；然而我们想开始组织一个小型的软件仓库。"inputs" 模式在 nixpkgs 中被广泛使用；它让我们可以把 derivation 与仓库本身解耦，并增加定制的可能性。

@@ -1,98 +1,98 @@
-# Why You Should Give it a Try
+# 为什么值得一试
 
-## Introduction
+## 简介
 
-Welcome to the first post of the "[Nix](https://nixos.org/nix) in pills" series. Nix is a purely functional package manager and deployment system for POSIX.
+欢迎来到「[Nix](https://nixos.org/nix) 药丸」系列的第一篇。Nix 是一个纯函数式的软件包管理器和部署系统，面向 POSIX 系统。
 
-There's a lot of documentation that describes what Nix, [NixOS](https://nixos.org/nixos) and related projects are. But the purpose of this post is to convince you to give Nix a try. Installing NixOS is not required, but sometimes I may refer to NixOS as a real world example of Nix usage for building a whole operating system.
+已有大量文档描述了 Nix、[NixOS](https://nixos.org/nixos) 以及相关项目是什么。但本文的目的是说服你亲自尝试一下 Nix。不需要安装 NixOS，不过有时我可能会以 NixOS 作为构建整套操作系统的真实用例来举例说明。
 
-## Rationale for this series
+## 这个系列的创作缘由
 
-The [Nix](https://nixos.org/manual/nix), [Nixpkgs](https://nixos.org/manual/nixpkgs/), and [NixOS](https://nixos.org/manual/nixos/) manuals along with [the wiki](https://wiki.nixos.org/) are excellent resources for explaining how Nix/NixOS works, how you can use it, and how cool things are being done with it. However, at the beginning you may feel that some of the magic which happens behind the scenes is hard to grasp.
+[Nix](https://nixos.org/manual/nix)、[Nixpkgs](https://nixos.org/manual/nixpkgs/) 和 [NixOS](https://nixos.org/manual/nixos/) 手册以及[官方 wiki](https://wiki.nixos.org/) 都是很好的资源，它们解释了 Nix/NixOS 是如何工作的、你可以如何使用它，以及用它能够做出多么酷的东西。然而，一开始你可能会觉得幕后发生的某些「魔法」难以理解。
 
-This series aims to complement the existing explanations from the more formal documents.
+本系列旨在对正式文档中已有的讲解加以补充。
 
-The following is a description of Nix. Just as with pills, I'll try to be as short as possible.
+下面是对 Nix 的一个描述。就像吃药丸一样，我会尽量言简意赅。
 
-## Not being purely functional
+## 并非纯函数式
 
-Most, if not all, widely used package managers ([dpkg](https://wiki.debian.org/dpkg), [rpm](http://www.rpm.org/), ...) mutate the global state of the system. If a package `foo-1.0` installs a program to `/usr/bin/foo`, you cannot install `foo-1.1` as well, unless you change the installation paths or the binary name. But changing the binary names means breaking users of that binary.
+几乎所有被广泛使用的软件包管理器（[dpkg](https://wiki.debian.org/dpkg)、[rpm](http://www.rpm.org/) 等）都会修改系统的全局状态。如果软件包 `foo-1.0` 把一个程序安装到 `/usr/bin/foo`，你就无法同时安装 `foo-1.1`，除非你修改安装路径或二进制文件名。而修改二进制文件名又意味着破坏依赖该二进制文件的用户。
 
-There are some attempts to mitigate this problem. Debian, for example, partially solves the problem with the [alternatives](https://wiki.debian.org/DebianAlternatives) system.
+有一些缓解这个问题的尝试。例如，Debian 通过 [alternatives](https://wiki.debian.org/DebianAlternatives) 系统部分地解决了这个问题。
 
-So while in theory it's possible with some current systems to install multiple versions of the same package, in practice it's very painful.
+所以，尽管理论上用现有的一些系统可以安装同一软件包的多个版本，但在实践中非常痛苦。
 
-Let's say you need an nginx service and also an nginx-openresty service. You have to create a new package that changes all the paths to have, for example, an `-openresty` suffix.
+假设你需要一个 nginx 服务，同时还需要一个 nginx-openresty 服务。你必须创建一个新软件包，修改所有路径，例如加上 `-openresty` 后缀。
 
-Or suppose that you want to run two different instances of mysql: 5.2 and 5.5. The same thing applies, plus you have to also make sure the two mysqlclient libraries do not collide.
+或者假设你想运行两个不同版本的 mysql 实例：5.2 和 5.5。同样的问题依然存在，此外你还得确保两个 mysqlclient 库不会发生冲突。
 
-This is not impossible but it _is_ very inconvenient. If you want to install two whole stacks of software like GNOME 3.10 and GNOME 3.12, you can imagine the amount of work.
+这并非不可能，但确实_非常_麻烦。如果你想安装两整套软件栈，比如 GNOME 3.10 和 GNOME 3.12，可以想象工作量有多大。
 
-From an administrator's point of view: you can use containers. The typical solution nowadays is to create a container per service, especially when different versions are needed. That somewhat solves the problem, but at a different level and with other drawbacks. For example, needing orchestration tools, setting up a shared cache of packages, and new machines to monitor rather than simple services.
+从管理员的视角看：你可以使用容器。如今典型的做法是为每个服务创建一个容器，尤其是需要不同版本的时候。这算是解决了问题，但是是在另一个层面解决的，而且带来了别的缺陷。例如，需要编排工具、需要搭建共享的软件包缓存，而且要监控的是一台台新机器而不是简单的服务。
 
-From a developer's point of view: you can use virtualenv for python, or jhbuild for gnome, or whatever else. But then how do you mix the two stacks? How do you avoid recompiling the same thing when it could instead be shared? Also you need to set up your development tools to point to the different directories where libraries are installed. Not only that, there's the risk that some of the software incorrectly uses system libraries.
+从开发者的视角看：你可以为 python 使用 virtualenv，为 gnome 使用 jhbuild，或者其他任何工具。但是你如何把这两个软件栈混在一起用？如何避免重复编译本可以共享的同一份东西？此外，你还需要配置开发工具，让它们指向库所在的不同目录。不止如此，还存在某些软件错误地使用系统库的风险。
 
-And so on. Nix solves all this at the packaging level and solves it well. A single tool to rule them all.
+诸如此类。Nix 在打包层面解决了这一切，而且解决得很好。一个工具统管一切。
 
-## Being purely functional
+## 纯函数式
 
-Nix makes no assumptions about the global state of the system. This has many advantages, but also some drawbacks of course. The core of a Nix system is the Nix store, usually installed under `/nix/store`, and some tools to manipulate the store. In Nix there is the notion of a _derivation_ rather than a package. The difference can be subtle at the beginning, so I will often use the words interchangeably.
+Nix 对系统的全局状态不做任何假设。这带来了许多优点，当然也有一些缺点。Nix 系统的核心是 Nix store（保留英文，即 Nix 存储仓库），通常安装在 `/nix/store` 下，还有一些用于操作该存储的工具。在 Nix 中有 _derivation（派生）_ 的概念，而不是软件包。这个区别一开始可能很微妙，所以我经常会把这两个词混用。
 
-Derivations/packages are stored in the Nix store as follows: `/nix/store/«hash-name»`, where the hash uniquely identifies the derivation (this isn't quite true, it's a little more complex), and the name is the name of the derivation.
+derivation（软件包）按如下方式存储在 Nix store 中：`/nix/store/«hash-name»`，其中 hash 唯一标识该 derivation（这并不完全准确，实际情况要更复杂一些），name 则是该 derivation 的名称。
 
-Let's take a bash derivation as an example: `/nix/store/s4zia7hhqkin1di0f187b79sa2srhv6k-bash-4.2-p45/`. This is a directory in the Nix store which contains `bin/bash`.
+我们以一个 bash derivation 为例：`/nix/store/s4zia7hhqkin1di0f187b79sa2srhv6k-bash-4.2-p45/`。这是 Nix store 中的一个目录，其中包含 `bin/bash`。
 
-What that means is that there's no `/bin/bash`, there's only that self-contained build output in the store. The same goes for coreutils and everything else. To make them convenient to use from the shell, Nix will arrange for binaries to appear in your `PATH` as appropriate.
+这意味着系统中并没有 `/bin/bash`，只有存储中那个自成一体的构建产物。coreutils 以及其他一切软件都是如此。为了让你在 shell 中方便地使用它们，Nix 会安排这些二进制文件适当地出现在你的 `PATH` 中。
 
-What we have is basically a store of all packages (with different versions occupying different locations), and everything in the Nix store is immutable.
+我们得到的基本上是一个存放所有软件包的存储仓库（不同版本占据不同位置），而 Nix store 中的一切都是不可变的。
 
-In fact, there's no ldconfig cache either. So where does bash find libc?
+事实上，也不存在 ldconfig 缓存。那么 bash 是在哪里找到 libc 的呢？
 
 ```console
 $ ldd `which bash`
 libc.so.6 => /nix/store/94n64qy99ja0vgbkf675nyk39g9b978n-glibc-2.19/lib/libc.so.6 (0x00007f0248cce000)
 ```
 
-It turns out that when bash was built, it was built against that specific version of glibc in the Nix store, and at runtime it will require exactly that glibc version.
+结果是，bash 在构建时就是针对 Nix store 中那个特定版本的 glibc 构建的，并且在运行时它会精确地要求那个 glibc 版本。
 
-Don't be confused by the version in the derivation name: it's only a name for us humans. You may end up having two derivations with the same name but different hashes: it's the hash that really matters.
+不要被 derivation 名称中的版本号迷惑：那只是给我们人类看的名字。你最终可能会遇到两个同名但 hash 不同的 derivation：真正起作用的是 hash。
 
-What does all this mean? It means that you could run mysql 5.2 with glibc-2.18, and mysql 5.5 with glibc-2.19. You could use your python module with python 2.7 compiled with gcc 4.6 and the same python module with python 3 compiled with gcc 4.8, all in the same system.
+这一切意味着什么？意味着你可以在同一个系统里运行基于 glibc-2.18 的 mysql 5.2，以及基于 glibc-2.19 的 mysql 5.5。你可以用 gcc 4.6 编译的 python 2.7 使用你的 python 模块，同时用 gcc 4.8 编译的 python 3 使用同一个 python 模块，全部在同一台系统上。
 
-In other words: no dependency hell, not even a dependency resolution algorithm. Straight dependencies from derivations to other derivations.
+换句话说：没有依赖地狱，甚至没有依赖解析算法。只有从 derivation 到其他 derivation 的直接依赖。
 
-From an administrator's point of view: if you want an old PHP version for one application, but want to upgrade the rest of the system, that's not painful any more.
+从管理员的视角看：如果你某个应用需要旧版 PHP，但又想升级系统的其余部分，这再也不痛苦了。
 
-From a developer's point of view: if you want to develop webkit with llvm 3.4 and 3.3, that's not painful any more.
+从开发者的视角看：如果你要用 llvm 3.4 和 3.3 各开发一个 webkit，这也不再痛苦。
 
-## Mutable vs. immutable
+## 可变与不可变
 
-When upgrading a library, most package managers replace it in-place. All new applications run afterwards with the new library without being recompiled. After all, they all refer dynamically to `libc6.so`.
+升级一个库时，大多数软件包管理器会就地替换它。之后所有新应用无需重新编译就能使用新库运行。毕竟它们都动态引用 `libc6.so`。
 
-Since Nix derivations are immutable, upgrading a library like glibc means recompiling all applications, because the glibc path to the Nix store has been hardcoded.
+由于 Nix 的 derivation 是不可变的，升级像 glibc 这样的库意味着要重新编译所有应用程序，因为指向 Nix store 中 glibc 的路径已经被硬编码了。
 
-So how do we deal with security updates? In Nix we have some tricks (still pure) to solve this problem, but that's another story.
+那么我们如何处理安全更新呢？在 Nix 中我们有一些（依然是纯函数式的）技巧来解决这个问题，但那是另一个故事了。
 
-Another problem is that unless software has in mind a pure functional model, or can be adapted to it, it can be hard to compose applications at runtime.
+另一个问题是，如果软件本身没有按照纯函数式模型来设计，或者无法适配这种模型，就很难在运行时组合应用。
 
-Let's take Firefox for example. On most systems, you install flash, and it starts working in Firefox because Firefox looks in a global path for plugins.
+以 Firefox 为例。在大多数系统上，你安装了 flash，它就能直接在 Firefox 中工作，因为 Firefox 会在全局路径中查找插件。
 
-In Nix, there's no such global path for plugins. Firefox therefore must know explicitly about the path to flash. The way we handle this problem is to wrap the Firefox binary so that we can setup the necessary environment to make it find flash in the nix store. That will produce a new Firefox derivation: be aware that it takes a few seconds, and it makes composition harder at runtime.
+在 Nix 中，插件没有这样的全局路径。因此 Firefox 必须显式地知道 flash 的路径。我们处理这个问题的办法是包装 Firefox 的二进制文件，以便设置必要的 environment（环境），让它能在 Nix store 中找到 flash。这会产生一个新的 Firefox derivation：请注意这需要几秒钟，而且会让运行时组合变得更困难。
 
-There are no upgrade/downgrade scripts for your data. It doesn't make sense with this approach, because there's no real derivation to be upgraded. With Nix you switch to using other software with its own stack of dependencies, but there's no formal notion of upgrade or downgrade when doing so.
+对你的数据而言，不存在升级/降级脚本。在这种方式下这没有意义，因为并不存在真正需要被升级的 derivation。使用 Nix 时，你切换到使用另一个带有自己依赖栈的软件，但在这个过程中并没有升级或降级的正式概念。
 
-If there is a data format change, then migrating to the new data format remains your own responsibility.
+如果数据格式发生了变化，那么迁移到新数据格式仍然是你要自己负责的事情。
 
-## Conclusion
+## 结论
 
-Nix lets you compose software at build time with maximum flexibility, and with builds being as reproducible as possible. Not only that, due to its nature deploying systems in the cloud is so easy, consistent, and reliable that in the Nix world all existing self-containment and orchestration tools are deprecated by [NixOps](http://nixos.org/nixops/).
+Nix 让你在构建时以最大的灵活性组合软件，并让构建尽可能可复现。不仅如此，由于它的本性，在云中部署系统变得如此简单、一致、可靠，以至于在 Nix 的世界里，所有现有的自包含和编排工具都被 [NixOps](http://nixos.org/nixops/) 弃用了。
 
-It however _currently_ falls short when working with dynamic composition at runtime or replacing low level libraries, due to the need to rebuild dependencies.
+不过，由于需要重新构建依赖，它在运行时动态组合或替换底层库方面_目前_还有所不足。
 
-That may sound scary, however after running NixOS on both a server and a laptop desktop, I'm very satisfied so far. Some of the architectural problems just need some man-power, other design problems still need to be solved as a community.
+这听起来可能吓人，但在服务器和笔记本桌面上都运行过 NixOS 之后，我目前非常满意。一些架构问题只是需要投入人力，另一些设计问题则需要整个社区共同解决。
 
-Considering [Nixpkgs](https://nixos.org/nixpkgs/) ([github link](https://github.com/NixOS/nixpkgs)) is a completely new repository of all the existing software, with a completely fresh concept, and with few core developers but overall year-over-year increasing contributions, the current state is more than acceptable and beyond the experimental stage. In other words, it's worth your investment.
+考虑到 [Nixpkgs](https://nixos.org/nixpkgs/)（[github 链接](https://github.com/NixOS/nixpkgs)）是一个包含所有现有软件的全新仓库，概念完全崭新，核心开发者不多但贡献逐年增长，目前的状态完全可以接受，早已超出实验阶段。换句话说，值得你投入。
 
-## Next pill...
+## 下一篇药丸……
 
-...we will install Nix on top of your current system (I assume GNU/Linux, but we also have OSX users) and start inspecting the installed software.
+……我们将在你现有的系统上（我假设是 GNU/Linux，但也有 OSX 用户）安装 Nix，并开始检视已安装的软件。

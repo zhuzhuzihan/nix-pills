@@ -1,33 +1,33 @@
-# Our First Derivation
+# 第一个 derivation
 
-Welcome to the sixth Nix pill. In the previous [fifth pill](05-functions-and-imports.md) we introduced functions and imports. Functions and imports are very simple concepts that allow for building complex abstractions and composition of modules to build a flexible Nix system.
+欢迎来到第六篇 Nix 药丸。在上一篇[第五篇药丸](05-functions-and-imports.md)中我们介绍了函数与导入。函数与导入是非常简单的概念，却可以用来构建复杂的抽象和模块组合，从而搭建一个灵活的 Nix 系统。
 
-In this post we finally arrived to writing a derivation. Derivations are the building blocks of a Nix system, from a file system view point. The Nix language is used to describe such derivations.
+在这篇文章中，我们终于要开始编写 derivation（派生）了。从文件系统的视角来看，derivation 是 Nix 系统的构建基石。Nix 语言就是用来描述这些 derivation 的。
 
-I remind you how to enter the Nix environment: `source ~/.nix-profile/etc/profile.d/nix.sh`
+再次提醒进入 Nix 环境的方法：`source ~/.nix-profile/etc/profile.d/nix.sh`
 
-## The derivation function
+## derivation 函数
 
-The [derivation built-in function](https://nix.dev/manual/nix/stable/language/derivations) is used to create derivations. I invite you to read the link in the Nix manual about the derivation built-in. A derivation from a Nix language view point is simply a set, with some attributes. Therefore you can pass the derivation around with variables like anything else.
+[derivation 内置函数](https://nix.dev/manual/nix/stable/language/derivations)用于创建 derivation。我建议你阅读 Nix 手册中关于 derivation 内置函数的链接。从 Nix 语言的视角来看，derivation 只是一个集合（set），带有若干属性。因此，你可以像对待其他任何东西一样，用变量来传递 derivation。
 
-That's where the real power comes in.
+这正是它真正的威力所在。
 
-The `derivation` function receives a set as its first argument. This set requires at least the following three attributes:
+`derivation` 函数的第一个参数是一个集合。这个集合至少需要以下三个属性：
 
-- name: the name of the derivation. In the nix store the format is hash-name, that's the name.
+- name：derivation 的名称。在 nix store 中格式是 hash-name，这就是那个 name。
 
-- system: is the name of the system in which the derivation can be built. For example, x86_64-linux.
+- system：derivation 可以在其上构建的系统名称。例如 x86_64-linux。
 
-- builder: is the binary program that builds the derivation.
+- builder：构建 derivation 的二进制程序。
 
-First of all, what's the name of our system as seen by nix?
+首先，在 nix 看来我们的系统名称是什么？
 
 ```console
 nix-repl> builtins.currentSystem
 "x86_64-linux"
 ```
 
-Let's try to fake the name of the system:
+让我们试着伪造一个系统名称：
 
 ```console
 nix-repl> d = derivation { name = "myname"; builder = "mybuilder"; system = "mysystem"; }
@@ -35,27 +35,27 @@ nix-repl> d
 «derivation /nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv»
 ```
 
-Oh oh, what's that? Did it build the derivation? No it didn't, but it **did create the .drv file**. `nix repl` does not build derivations unless you tell it to do so.
+哦哦，这是什么？它构建了 derivation 吗？没有，但它**确实创建了 .drv 文件**。`nix repl` 不会构建 derivation，除非你明确要求它这么做。
 
-## Digression about .drv files
+## 关于 .drv 文件的题外话
 
-What's that `.drv` file? It is the specification of how to build the derivation, without all the Nix language fuzz.
+那个 `.drv` 文件是什么？它是如何构建这个 derivation 的规范描述，去掉了所有 Nix 语言的繁杂细节。
 
-Before continuing, some analogies with the C language:
+在继续之前，先与 C 语言做些类比：
 
-- `.nix` files are like `.c` files.
+- `.nix` 文件就像 `.c` 文件。
 
-- `.drv` files are intermediate files like `.o` files. The `.drv` describes how to build a derivation; it's the bare minimum information.
+- `.drv` 文件是中间文件，就像 `.o` 文件。`.drv` 描述如何构建一个 derivation；它是最精简的信息。
 
-- out paths are then the product of the build.
+- out path（输出路径）则是构建的产物。
 
-Both drv paths and out paths are stored in the nix store as you can see.
+如你所见，drv path 和 out path 都存储在 nix store 中。
 
-What's in that `.drv` file? You can read it, but it's better to pretty print it:
+那个 `.drv` 文件里有什么？你可以直接阅读它，但最好把它漂亮地打印出来：
 
 <div class="info">
 
-Note: If your version of nix doesn't have `nix derivation show`, use `nix show-derivation` instead.
+注意：如果你的 nix 版本没有 `nix derivation show`，请改用 `nix show-derivation`。
 
 </div>
 
@@ -83,29 +83,29 @@ $ nix derivation show /nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv
 }
 ```
 
-Ok, we can see there's an out path, but it does not exist yet. We never told Nix to build it, but we know beforehand where the build output will be. Why?
+好，我们可以看到一个 out path，但它还不存在。我们从未告诉 Nix 去构建它，但我们事先就知道构建产物会在哪里。为什么？
 
-Think, if Nix ever built the derivation just because we accessed it in Nix, we would have to wait a long time if it was, say, Firefox. That's why Nix let us know the path beforehand and kept evaluating the Nix expressions, but it's still empty because no build was ever made.
+想一想，如果 Nix 只因为我们在 Nix 中访问了 derivation 就去构建它，那么假如它是 Firefox，我们就得等上很长时间。这就是为什么 Nix 让我们事先知道路径并继续对 Nix 表达式求值，但它仍然是空的，因为从未进行过任何构建。
 
-Important: the hash of the out path is based solely on the input derivations in the current version of Nix, not on the contents of the build product. It's possible however to have [content-addressable](https://en.wikipedia.org/wiki/Content-addressable_storage) derivations for e.g. tarballs as we'll see later on.
+重要提示：在当前版本的 Nix 中，out path 的哈希仅基于输入的 derivation，而不是基于构建产物的内容。不过，也可以有[内容寻址](https://en.wikipedia.org/wiki/Content-addressable_storage)的 derivation，例如针对 tarball，我们稍后会看到。
 
-Many things are empty in that `.drv`, however I'll write a summary of the [.drv format](http://nixos.org/~eelco/pubs/phd-thesis.pdf) for you:
+那个 `.drv` 里有很多东西是空的，不过我会为你写一份 [.drv 格式](http://nixos.org/~eelco/pubs/phd-thesis.pdf)的摘要：
 
-1.  The output paths (there can be multiple ones). By default nix creates one out path called "out".
+1.  输出路径（可以有多个）。默认情况下，nix 会创建一个名为 "out" 的 out path。
 
-2.  The list of input derivations. It's empty because we are not referring to any other derivation. Otherwise, there would be a list of other .drv files.
+2.  输入 derivation 的列表。它是空的，因为我们没有引用任何其他 derivation。否则，这里会是一个由其他 .drv 文件组成的列表。
 
-3.  The system and the builder executable (yes, it's a fake one).
+3.  系统和 builder 可执行文件（是的，它是个伪造的）。
 
-4.  Then a list of environment variables passed to the builder.
+4.  然后是传递给 builder 的环境变量列表。
 
-That's it, the minimum necessary information to build our derivation.
+就是这样，这些就是构建我们的 derivation 所需的最少信息。
 
-Important note: the environment variables passed to the builder are just those you see in the .drv plus some other Nix related configuration (number of cores, temp dir, ...). The builder will not inherit any variable from your running shell, otherwise builds would suffer from [non-determinism](https://wiki.debian.org/ReproducibleBuilds).
+重要说明：传递给 builder 的环境变量只是你在 .drv 中看到的那些，再加上一些其他与 Nix 相关的配置（核心数、临时目录等）。builder 不会从你正在运行的 shell 继承任何变量，否则构建会受到[不确定性](https://wiki.debian.org/ReproducibleBuilds)的影响。
 
-Back to our fake derivation.
+回到我们的伪造 derivation。
 
-Let's build our really fake derivation:
+让我们构建这个彻头彻尾伪造的 derivation：
 
 ```console
 nix-repl> d = derivation { name = "myname"; builder = "mybuilder"; system = "mysystem"; }
@@ -117,17 +117,17 @@ building path(s) `/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname'
 error: a `mysystem' is required to build `/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv', but I am a `x86_64-linux'
 ```
 
-The `:b` is a `nix repl` specific command to build a derivation. You can see more commands with `:?` . So in the output you can see that it takes the `.drv` as information on how to build the derivation. Then it says it's trying to produce our out path. Finally the error we were waiting for: that derivation can't be built on our system.
+`:b` 是 `nix repl` 特有的命令，用于构建一个 derivation。你可以用 `:?` 查看更多命令。所以在输出中可以看到，它把 `.drv` 作为如何构建 derivation 的信息。然后它说它正试图产生我们的 out path。最后是我们一直等待的错误：这个 derivation 无法在我们的系统上构建。
 
-We're doing the build inside `nix repl`, but what if we don't want to use `nix repl`? You can **realise** a `.drv` with:
+我们是在 `nix repl` 里进行构建的，但如果我们不想用 `nix repl` 呢？你可以用以下命令**实现（realise）**一个 `.drv`：
 
 ```console
 $ nix-store -r /nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv
 ```
 
-You will get the same output as before.
+你会得到与之前相同的输出。
 
-Let's fix the system attribute:
+让我们修正 system 属性：
 
 ```console
 nix-repl> d = derivation { name = "myname"; builder = "mybuilder"; system = builtins.currentSystem; }
@@ -136,11 +136,11 @@ nix-repl> :b d
 build error: invalid file name `mybuilder'
 ```
 
-A step forward: of course, that `mybuilder` executable does not really exist. Stop for a moment.
+前进了一步：当然，那个 `mybuilder` 可执行文件并不真的存在。先停下来想一想。
 
-## What's in a derivation set
+## derivation 集合里有什么
 
-It is useful to start by inspecting the return value from the derivation function. In this case, the returned value is a plain set:
+先检视 derivation 函数的返回值是很有用的。在这个例子里，返回值是一个普通的集合：
 
 ```console
 nix-repl> d = derivation { name = "myname"; builder = "mybuilder"; system = "mysystem"; }
@@ -150,42 +150,42 @@ nix-repl> builtins.attrNames d
 [ "all" "builder" "drvAttrs" "drvPath" "name" "out" "outPath" "outputName" "system" "type" ]
 ```
 
-You can guess what `builtins.isAttrs` does; it returns true if the argument is a set. While `builtins.attrNames` returns a list of keys of the given set. Some kind of reflection, you might say.
+你可以猜到 `builtins.isAttrs` 是干什么的：如果参数是一个集合，它就返回 true。而 `builtins.attrNames` 返回给定集合的键列表。你可能会说，这是一种反射。
 
-Start from drvAttrs:
+从 drvAttrs 开始：
 
 ```console
 nix-repl> d.drvAttrs
 { builder = "mybuilder"; name = "myname"; system = "mysystem"; }
 ```
 
-That's basically the input we gave to the derivation function. Also the `d.name`, `d.system` and `d.builder` attributes are exactly the ones we gave as input.
+这基本上就是我们传给 derivation 函数的输入。`d.name`、`d.system` 和 `d.builder` 属性也恰好就是我们给出的输入。
 
 ```console
 nix-repl> (d == d.out)
 true
 ```
 
-So out is just the derivation itself, it seems weird but the reason is that we only have one output from the derivation. That's also the reason why `d.all` is a singleton. We'll see multiple outputs later.
+所以 out 就是 derivation 本身，这看起来很奇怪，但原因是我们只有一个输出。这也是 `d.all` 是单元素列表的原因。我们稍后会看到多个输出的情况。
 
-The `d.drvPath` is the path of the `.drv` file: `/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv`.
+`d.drvPath` 是 `.drv` 文件的路径：`/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv`。
 
-Something interesting is the `type` attribute. It's `"derivation"`. Nix does add a little magic to sets with type derivation, but not that much. To help you understand, you can create yourself a set with that type, it's a simple set:
+有趣的是 `type` 属性。它的值是 `"derivation"`。Nix 确实对带有 type derivation 的集合施加了一点魔法，但并不多。为了帮助你理解，你可以自己创建一个带该 type 的集合，它就是一个简单的集合：
 
 ```console
 nix-repl> { type = "derivation"; }
 «derivation ???»
 ```
 
-Of course it has no other information, so Nix doesn't know what to say :-) But you get it, the `type = "derivation"` is just a convention for Nix and for us to understand the set is a derivation.
+当然，它没有其他任何信息，所以 Nix 不知道该说什么 :-) 但你明白了，`type = "derivation"` 只是一种约定，让 Nix 和我们都能明白这个集合是一个 derivation。
 
-When writing packages, we are interested in the outputs. The other metadata is needed for Nix to know how to create the drv path and the out path.
+在编写软件包时，我们关心的是输出。其他元数据则是 Nix 用来知道如何创建 drv path 和 out path 所必需的。
 
-The `outPath` attribute is the build path in the nix store: `/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname`.
+`outPath` 属性是 nix store 中的构建路径：`/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname`。
 
-## Referring to other derivations
+## 引用其他 derivation
 
-Just like dependencies in other package managers, how do we refer to other packages? How do we refer to other derivations in terms of files on the disk? We use the `outPath`. The `outPath` describes the location of the files of that derivation. To make it more convenient, Nix is able to do a conversion from a derivation set to a string.
+就像其他软件包管理器中的依赖一样，我们如何引用其他软件包？就磁盘上的文件而言，我们如何引用其他 derivation？我们使用 `outPath`。`outPath` 描述了该 derivation 的文件所在的位置。为了方便起见，Nix 能够把一个 derivation 集合转换成字符串。
 
 ```console
 nix-repl> d.outPath
@@ -194,7 +194,7 @@ nix-repl> builtins.toString d
 "/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname"
 ```
 
-Nix does the "set to string conversion" as long as there is the `outPath` attribute (much like a toString method in other languages):
+只要存在 `outPath` 属性，Nix 就会进行"集合到字符串的转换"（很像其他语言中的 toString 方法）：
 
 ```console
 nix-repl> builtins.toString { outPath = "foo"; }
@@ -203,7 +203,7 @@ nix-repl> builtins.toString { a = "b"; }
 error: cannot coerce a set to a string, at (string):1:1
 ```
 
-Say we want to use binaries from coreutils (ignore the nixpkgs etc.):
+假设我们想使用 coreutils 中的二进制程序（先忽略 nixpkgs 等内容）：
 
 ```console
 nix-repl> :l <nixpkgs>
@@ -214,14 +214,14 @@ nix-repl> builtins.toString coreutils
 "/nix/store/8w4cbiy7wqvaqsnsnb3zvabq1cp2zhyz-coreutils-8.21"
 ```
 
-Don't worry about the nixpkgs stuff for now, just know that we added a series of variables to the current scope. One of them is coreutils. It is the derivation of the coreutils package you all know of from other Linux distributions. It contains basic binaries for GNU/Linux systems (you may have multiple derivations of coreutils in the nix store, no worries):
+暂时不用操心 nixpkgs 的细节，只需知道我们往当前作用域里添加了一系列变量。其中之一就是 coreutils。它是你在其他 Linux 发行版上都见过的 coreutils 软件包的 derivation。它包含 GNU/Linux 系统的基础二进制程序（nix store 中可能同时存在多个 coreutils 的 derivation，不必担心）：
 
 ```console
 $ ls /nix/store/*coreutils*/bin
 [...]
 ```
 
-A reminder that it is possible to interpolate Nix expressions with `${...}` inside strings:
+提醒一下，可以在字符串中用 `${...}` 插值 Nix 表达式：
 
 ```console
 nix-repl> "${d}"
@@ -230,16 +230,16 @@ nix-repl> "${coreutils}"
 "/nix/store/8w4cbiy7wqvaqsnsnb3zvabq1cp2zhyz-coreutils-8.21"
 ```
 
-That's very convenient, because then we could refer to e.g. the bin/true binary like this:
+这非常方便，因为这样一来，我们就可以这样引用例如 bin/true 这个二进制程序：
 
 ```console
 nix-repl> "${coreutils}/bin/true"
 "/nix/store/8w4cbiy7wqvaqsnsnb3zvabq1cp2zhyz-coreutils-8.21/bin/true"
 ```
 
-## An almost working derivation
+## 一个几乎能工作的 derivation
 
-In the previous attempt we used a fake builder, `mybuilder` which obviously does not exist. But we can use for example bin/true, which always exits with 0 (success).
+在上一次尝试中，我们使用了一个伪造的 builder `mybuilder`，它显然并不存在。但我们可以使用例如 bin/true，它总是以 0（成功）退出。
 
 ```console
 nix-repl> :l <nixpkgs>
@@ -249,11 +249,11 @@ nix-repl> :b d
 builder for `/nix/store/qyfrcd53wmc0v22ymhhd5r6sz5xmdc8a-myname.drv' failed to produce output path `/nix/store/ly2k1vswbfmswr33hw0kf0ccilrpisnk-myname'
 ```
 
-Another step forward, it executed the builder (bin/true), but the builder did not create the out path of course, it just exited with 0.
+又前进了一步，它执行了 builder（bin/true），但 builder 当然没有创建 out path，它只是以 0 退出了。
 
-Obvious note: every time we change the derivation, a new hash is created.
+显而易见的说明：每当我们修改 derivation，就会生成一个新的哈希。
 
-Let's examine the new `.drv` now that we referred to another derivation:
+既然我们引用了另一个 derivation，现在来看看新的 `.drv`：
 
 ```console
 $ nix derivation show /nix/store/qyfrcd53wmc0v22ymhhd5r6sz5xmdc8a-myname.drv
@@ -283,32 +283,32 @@ $ nix derivation show /nix/store/qyfrcd53wmc0v22ymhhd5r6sz5xmdc8a-myname.drv
 }
 ```
 
-Aha! Nix added a dependency to our myname.drv, it's the coreutils.drv. Before doing our build, Nix should build the coreutils.drv. But since coreutils is already in our nix store, no build is needed, it's already there with out path `/nix/store/qrxs7sabhqcr3j9ai0j0cp58zfnny0jz-coreutils-8.29`.
+啊哈！Nix 给我们的 myname.drv 添加了一个依赖，它就是 coreutils.drv。在进行我们的构建之前，Nix 应当先构建 coreutils.drv。但由于 coreutils 已经在我们的 nix store 中，无需任何构建，它已经在那里了，out path 为 `/nix/store/qrxs7sabhqcr3j9ai0j0cp58zfnny0jz-coreutils-8.29`。
 
-## When is the derivation built
+## derivation 何时被构建
 
-Nix does not build derivations **during evaluation** of Nix expressions. In fact, that's why we have to do ":b drv" in `nix repl`, or use nix-store -r in the first place.
+Nix 不会在 Nix 表达式**求值期间**构建 derivation。事实上，这就是为什么我们一开始要在 `nix repl` 中使用 ":b drv"，或者使用 nix-store -r。
 
-An important separation is made in Nix:
+Nix 中做了一个重要的区分：
 
-- **Instantiate/Evaluation time**: the Nix expression is parsed, interpreted and finally returns a derivation set. During evaluation, you can refer to other derivations because Nix will create .drv files and we will know out paths beforehand. This is achieved with [nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate).
+- **实例化/求值阶段（Instantiate/Evaluation time）**：Nix 表达式被解析、解释并最终返回一个 derivation 集合。在求值期间，你可以引用其他 derivation，因为 Nix 会创建 .drv 文件，而且我们会事先知道 out path。这是通过 [nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate) 实现的。
 
-- **Realise/Build time**: the .drv from the derivation set is built, first building .drv inputs (build dependencies). This is achieved with [nix-store -r](https://nix.dev/manual/nix/stable/command-ref/nix-store/realise).
+- **实现/构建阶段（Realise/Build time）**：来自 derivation 集合的 .drv 被构建，首先构建其 .drv 输入（构建依赖）。这是通过 [nix-store -r](https://nix.dev/manual/nix/stable/command-ref/nix-store/realise) 实现的。
 
-Think of it as of compile time and link time like with C/C++ projects. You first compile all source files to object files. Then link object files in a single executable.
+把它想象成 C/C++ 项目中的编译期和链接期。你先把所有源文件编译成目标文件，然后把目标文件链接成一个可执行文件。
 
-In Nix, first the Nix expression (usually in a .nix file) is compiled to .drv, then each .drv is built and the product is installed in the relative out paths.
+在 Nix 中，先是 Nix 表达式（通常在 .nix 文件中）被"编译"成 .drv，然后每个 .drv 被构建，其产物被安装到相应的 out path 中。
 
-## Conclusion
+## 结语
 
-Is it that complicated to create a package for Nix? No, it's not.
+为 Nix 创建一个软件包真的有那么复杂吗？不，并不复杂。
 
-We're walking through the fundamentals of Nix derivations, to understand how they work, how they are represented. Packaging in Nix is certainly easier than that, but we're not there yet in this post. More Nix pills are needed.
+我们正在梳理 Nix derivation 的基本原理，以理解它们如何工作、如何表示。Nix 中的打包当然会比这更简单，但在这篇文章里我们还没走到那一步。还需要更多 Nix 药丸。
 
-With the derivation function we provide a set of information on how to build a package, and we get back the information about where the package was built. Nix converts a set to a string when there's an `outPath`; that's very convenient. With that, it's easy to refer to other derivations.
+借助 derivation 函数，我们提供了一组关于如何构建软件包的信息，并得到关于软件包被构建到哪里的信息。只要存在 `outPath`，Nix 就会把集合转换为字符串；这非常方便。有了它，引用其他 derivation 就很容易了。
 
-When Nix builds a derivation, it first creates a .drv file from a derivation expression, and uses it to build the output. It does so recursively for all the dependencies (inputs). It "executes" the .drv files like a machine. Not much magic after all.
+当 Nix 构建一个 derivation 时，它先从 derivation 表达式创建一个 .drv 文件，再用它来构建输出。它对所有依赖（输入）递归地执行这一过程。它像一台机器一样"执行" .drv 文件。其实并没有太多魔法。
 
-## Next pill
+## 下一篇药丸
 
-...we will finally write our first **working** derivation. Yes, this post is about "our first derivation", but I never said it was a working one ;)
+……我们将终于编写出第一个**能工作的** derivation。是的，这篇文章叫"第一个 derivation"，但我从没说过它能工作 ;)

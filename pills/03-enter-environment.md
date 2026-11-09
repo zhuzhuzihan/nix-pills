@@ -1,26 +1,26 @@
-# Enter the Environment {#enter-environment}
+# 进入环境 {#enter-environment}
 
-Welcome to the third Nix pill. In the [second pill](02-install-on-your-running-system.md) we installed Nix on our running system. Now we can finally play with it a little, these things also apply to NixOS users.
+欢迎来到第三篇 Nix 药丸。在[第二篇药丸](02-install-on-your-running-system.md)中，我们在现有系统上安装了 Nix。现在终于可以稍微把玩一下它了，这些内容同样适用于 NixOS 用户。
 
-## Enter the environment
+## 进入环境
 
-**If you're using NixOS, you can skip to the [next](#install-something) step.**
+**如果你在使用 NixOS，可以跳到[下一步](#install-something)。**
 
-In the previous article we created a Nix user, so let's start by switching to it with `su - nix`. If your `~/.profile` got evaluated, then you should now be able to run commands like `nix-env` and `nix-store`.
+在上一篇文章中我们创建了一个 Nix 用户，那就先用 `su - nix` 切换到该用户吧。如果你的 `~/.profile` 已经被执行过，那么现在你应该可以运行 `nix-env` 和 `nix-store` 之类的命令了。
 
-If that's not the case:
+如果不是这样：
 
 ```console
 $ source ~/.nix-profile/etc/profile.d/nix.sh
 ```
 
-To remind you, `~/.nix-profile/etc` points to the `nix-2.1.3` derivation. At this point, we are in our Nix user profile.
+提醒一下，`~/.nix-profile/etc` 指向的是 `nix-2.1.3` derivation。此时，我们已经处于自己的 Nix 用户 profile 中。
 
-## Install something {#install-something}
+## 安装点东西 {#install-something}
 
-Finally something practical! Installation into the Nix environment is an interesting process. Let's install `hello`, a simple CLI tool which prints `Hello world` and is mainly used to test compilers and package installations.
+终于来点实际的了！把软件安装到 Nix 环境中是一个有趣的过程。我们来安装 `hello`，这是一个简单的命令行工具，会打印 `Hello world`，主要用于测试编译器和软件包安装。
 
-Back to the installation:
+回到安装环节：
 
 ```console
 $ nix-env -i hello
@@ -30,17 +30,17 @@ building '/nix/store/0vqw0ssmh6y5zj48yg34gc6macr883xk-user-environment.drv'...
 created 36 symlinks in user environment
 ```
 
-Now you can run `hello`. Things to notice:
+现在你可以运行 `hello` 了。需要注意的几点：
 
-- We installed software as a user, and only for the Nix user.
+- 我们是以用户身份安装软件的，而且只针对 Nix 用户。
 
-- It created a new user environment. That's a new generation of our Nix user profile.
+- 它创建了一个新的用户环境（user environment）。这是我们 Nix 用户 profile 的一个新代（generation）。
 
-- The [nix-env](https://nix.dev/manual/nix/stable/command-ref/nix-env) tool manages environments, profiles and their generations.
+- [nix-env](https://nix.dev/manual/nix/stable/command-ref/nix-env) 工具负责管理环境、profile 及其各代。
 
-- We installed `hello` by derivation name minus the version. I repeat: we specified the **derivation name** (minus the version) to install it.
+- 我们是按去掉版本号的 derivation 名称安装 `hello` 的。我再说一遍：我们指定的是**derivation 名称**（去掉版本号）来安装它。
 
-We can list generations without walking through the `/nix` hierarchy:
+我们可以不遍历 `/nix` 层级就直接列出各代：
 
 ```console
 $ nix-env --list-generations
@@ -48,7 +48,7 @@ $ nix-env --list-generations
     2   2014-07-25 08:45:01   (current)
 ```
 
-Listing installed derivations:
+列出已安装的 derivation：
 
 ```console
 $ nix-env -q
@@ -56,13 +56,13 @@ nix-2.1.3
 hello-2.10
 ```
 
-So, where did `hello` really get installed? `which hello` is `~/.nix-profile/bin/hello` which points to the store. We can also list the derivation paths with `nix-env -q --out-path`. So that's what those derivation paths are called: the **output** of a build.
+那么，`hello` 到底被装到了哪里？`which hello` 的结果是 `~/.nix-profile/bin/hello`，它指向 store。我们还可以用 `nix-env -q --out-path` 列出 derivation 路径。原来这些 derivation 路径的名字就叫：构建的**输出（output）**。
 
-## Path merging
+## 路径合并
 
-At this point you probably want to run `man` to get some documentation. Even if you already have man system-wide outside of the Nix environment, you can install and use it within Nix with `nix-env -i man-db`. As usual, a new generation will be created, and `~/.nix-profile` will point to it.
+此时你大概想运行 `man` 查看一些文档了。即使你在 Nix 环境之外已经系统级安装了 man，你也可以用 `nix-env -i man-db` 在 Nix 内安装并使用它。照例会创建一个新代，`~/.nix-profile` 会指向它。
 
-Let's inspect the [profile](https://nix.dev/manual/nix/stable/package-management/profiles) a bit:
+让我们检视一下这个 [profile](https://nix.dev/manual/nix/stable/package-management/profiles)：
 
 ```console
 $ ls -l ~/.nix-profile/
@@ -71,7 +71,7 @@ lrwxrwxrwx 1 nix nix   55 Jan  1  1970 etc -> /nix/store/ig31y9gfpp8pf3szdd7d4sf
 [...]
 ```
 
-Now that's interesting. When only `nix-2.1.3` was installed, `bin` was a symlink to `nix-2.1.3`. Now that we've actually installed some things (`man`, `hello`), it's a real directory, not a symlink.
+有意思。当只安装了 `nix-2.1.3` 时，`bin` 是指向 `nix-2.1.3` 的符号链接。而当我们真正安装了一些东西（`man`、`hello`）之后，它变成了一个真实的目录，不再是符号链接。
 
 ```console
 $ ls -l ~/.nix-profile/bin/
@@ -84,37 +84,37 @@ hello -> /nix/store/58r35bqb4f3lxbnbabq718svq9i2pda3-hello-2.10/bin/hello
 [...]
 ```
 
-Okay, that's clearer now. `nix-env` merged the paths from the installed derivations. `which man` points to the Nix profile, rather than the system `man`, because `~/.nix-profile/bin` is at the head of `$PATH`.
+好，现在更清楚了。`nix-env` 把来自已安装 derivation 的路径合并了。`which man` 指向的是 Nix profile，而不是系统的 `man`，因为 `~/.nix-profile/bin` 位于 `$PATH` 的最前面。
 
-## Rolling back and switching generation
+## 回滚与切换代
 
-The last command installed `man`. We should be at generation 3, unless you changed something in the middle. Let's say we want to rollback to the old generation:
+刚才的命令安装了 `man`。我们应该处于第 3 代，除非你中途改动过什么。假设我们想回滚到旧一代：
 
 ```console
 $ nix-env --rollback
 switching from generation 3 to 2
 ```
 
-Now `nix-env -q` does not list `man` anymore. `` ls -l `which man` `` should now be your system copy.
+现在 `nix-env -q` 不再列出 `man` 了。`` ls -l `which man` `` 现在应该指向你系统里的那份拷贝。
 
-Enough with the rollback, let's go back to the most recent generation:
+回滚够了，让我们回到最新一代：
 
 ```console
 $ nix-env -G 3
 switching from generation 2 to 3
 ```
 
-I invite you to read the manpage of `nix-env`. `nix-env` requires an operation to perform, then there are common options for all operations, as well as options specific to each operation.
+我建议你读一读 `nix-env` 的 manpage。`nix-env` 需要指定一个要执行的操作（operation），然后是所有操作通用的选项，以及每个操作各自的专属选项。
 
-You can of course also [uninstall](https://nix.dev/manual/nix/stable/command-ref/nix-env/uninstall) and [upgrade](https://nix.dev/manual/nix/stable/command-ref/nix-env/upgrade) packages.
+当然，你也可以[卸载](https://nix.dev/manual/nix/stable/command-ref/nix-env/uninstall)和[升级](https://nix.dev/manual/nix/stable/command-ref/nix-env/upgrade)软件包。
 
-## Querying the store
+## 查询 store
 
-So far we learned how to query and manipulate the environment. But all of the environment components point to the store.
+到目前为止，我们学习了如何查询和操作 environment。但环境中的所有组件都指向 store。
 
-To query and manipulate the store, there's the `nix-store` command. We can do some interesting things, but we'll only see some queries for now.
+查询和操作 store 用的是 `nix-store` 命令。我们能做一些有趣的事情，但现在先只看一些查询操作。
 
-To show the direct runtime dependencies of `hello`:
+要显示 `hello` 的直接运行时依赖：
 
 ```console
 $ nix-store -q --references `which hello`
@@ -122,9 +122,9 @@ $ nix-store -q --references `which hello`
 /nix/store/58r35bqb4f3lxbnbabq718svq9i2pda3-hello-2.10
 ```
 
-The argument to `nix-store` can be anything as long as it points to the Nix store. It will follow symlinks.
+`nix-store` 的参数可以是任何东西，只要它指向 Nix store 即可。它会自动解析符号链接。
 
-It may not make sense to you right now, but let's print reverse dependencies of `hello`:
+现在你可能觉得没什么意义，但我们来打印一下 `hello` 的反向依赖（referrers）：
 
 ```console
 $ nix-store -q --referrers `which hello`
@@ -135,39 +135,39 @@ $ nix-store -q --referrers `which hello`
 /nix/store/ppr3qbq7fk2m2pa49i2z3i32cvfhsv7p-user-environment
 ```
 
-Was it what you expected? It turns out that our environments depend upon `hello`. Yes, that means that the environments are in the store, and since they contain symlinks to `hello`, therefore the environment depends upon `hello`.
+和你预期的一样吗？原来我们的环境依赖于 `hello`。是的，这意味着环境本身就在 store 中，而且由于它们包含指向 `hello` 的符号链接，所以环境依赖于 `hello`。
 
-Two environments were listed, generation 2 and generation 3, since these are the ones that had `hello` installed in them.
+列表里出现了两个环境，第 2 代和第 3 代，因为只有这两代安装了 `hello`。
 
-The `manifest.nix` file contains metadata about the environment, such as which derivations are installed. So that `nix-env` can list, upgrade or remove them. And yet again, the current `manifest.nix` can be found at `~/.nix-profile/manifest.nix`.
+`manifest.nix` 文件包含关于环境的元数据，例如安装了哪些 derivation，这样 `nix-env` 才能列出、升级或移除它们。同样，当前的 `manifest.nix` 可以在 `~/.nix-profile/manifest.nix` 找到。
 
-## Closures
+## 闭包（closure）
 
-The closures of a derivation is a list of all its dependencies, recursively, including absolutely everything necessary to use that derivation.
+一个 derivation 的闭包（closure）是它所有依赖的递归列表，包含使用该 derivation 所需的一切东西。
 
 ```console
 $ nix-store -qR `which man`
 [...]
 ```
 
-Copying all those derivations to the Nix store of another machine makes you able to run `man` out of the box on that other machine. That's the base of deployment using Nix, and you can already foresee the potential when deploying software in the cloud (hint: `nix-copy-closures` and `nix-store --export`).
+把这些 derivation 全部复制到另一台机器的 Nix store 中，就能让 `man` 在那台机器上开箱即用。这就是使用 Nix 进行部署的基础，你已经可以预见到在云中部署软件的潜力了（提示：`nix-copy-closures` 和 `nix-store --export`）。
 
-A nicer view of the closure:
+闭包的一种更直观的视图：
 
 ```console
 $ nix-store -q --tree `which man`
 [...]
 ```
 
-With the above command, you can find out exactly why a _runtime_ dependency, be it direct or indirect, exists for a given derivation.
+使用上面的命令，你可以确切地找出某个给定 derivation 为什么存在某个_运行时_依赖，无论是直接的还是间接的。
 
-The same applies to environments. As an exercise, run `nix-store -q --tree ~/.nix-profile`, and see that the first children are direct dependencies of the user environment: the installed derivations, and the `manifest.nix`.
+同样的操作也适用于环境。作为练习，运行 `nix-store -q --tree ~/.nix-profile`，你会看到第一层子节点是用户环境的直接依赖：已安装的 derivation，以及 `manifest.nix`。
 
-## Dependency resolution
+## 依赖解析
 
-There isn't anything like `apt` which solves a SAT problem in order to satisfy dependencies with lower and upper bounds on versions. There's no need for this because all the dependencies are static: if a derivation X depends on a derivation Y, then it always depends on it. A version of X which depended on Z would be a different derivation.
+这里没有像 `apt` 那样通过求解 SAT 问题来满足带版本上下界约束的依赖的东西。也没有这个必要，因为所有依赖都是静态的：如果 derivation X 依赖于 derivation Y，那么它永远依赖于它。某个依赖 Z 的 X 版本会是另一个不同的 derivation。
 
-## Recovering the hard way
+## 硬核自救
 
 ```console
 $ nix-env -e '*'
@@ -176,59 +176,59 @@ uninstalling 'nix-2.1.3'
 [...]
 ```
 
-Oops, that uninstalled all derivations from the environment, including Nix. That means we can't even run `nix-env`, what now?
+糟糕，这一下把环境里的所有 derivation 都卸载了，包括 Nix 本身。这意味着我们连 `nix-env` 都运行不了了，怎么办？
 
-Previously we got `nix-env` from the environment. Environments are a convenience for the user, but Nix is still there in the store!
+之前我们是从环境中获取 `nix-env` 的。环境只是给用户提供的便利，但 Nix 依然在 store 里！
 
-First, pick one `nix-2.1.3` derivation: `ls /nix/store/*nix-2.1.3`, say `/nix/store/ig31y9gfpp8pf3szdd7d4sf29zr7igbr-nix-2.1.3`.
+首先，挑一个 `nix-2.1.3` derivation：`ls /nix/store/*nix-2.1.3`，比如 `/nix/store/ig31y9gfpp8pf3szdd7d4sf29zr7igbr-nix-2.1.3`。
 
-The first option is to rollback:
+第一种方案是回滚：
 
 ```console
 $ /nix/store/ig31y9gfpp8pf3szdd7d4sf29zr7igbr-nix-2.1.3/bin/nix-env --rollback
 ```
 
-The second option is to install Nix, thus creating a new generation:
+第二种方案是安装 Nix，从而创建一个新代：
 
 ```console
 $ /nix/store/ig31y9gfpp8pf3szdd7d4sf29zr7igbr-nix-2.1.3/bin/nix-env -i /nix/store/ig31y9gfpp8pf3szdd7d4sf29zr7igbr-nix-2.1.3/bin/nix-env
 ```
 
-## Channels
+## channel
 
-So where are we getting packages from? We said something about this already in the [second article](02-install-on-your-running-system.md). There's a list of channels from which we get packages, although usually we use a single channel. The tool to manage channels is [nix-channel](https://nix.dev/manual/nix/stable/command-ref/nix-channel).
+那么我们是从哪里获取软件包的呢？这在[第二篇文章](02-install-on-your-running-system.md)中已经提到过。我们有一份 channel 列表可以从中获取软件包，不过通常只用一个 channel。管理 channel 的工具是 [nix-channel](https://nix.dev/manual/nix/stable/command-ref/nix-channel)。
 
 ```console
 $ nix-channel --list
 nixpkgs http://nixos.org/channels/nixpkgs-unstable
 ```
 
-If you're using NixOS, you may not see any output from the above command (if you're using the default), or you may see a channel whose name begins with "nixos-" instead of "nixpkgs".
+如果你在使用 NixOS，上面的命令可能没有任何输出（如果你用的是默认配置），或者你会看到一个名称以 "nixos-" 而非 "nixpkgs" 开头的 channel。
 
-That's essentially the contents of `~/.nix-channels`.
+这基本上就是 `~/.nix-channels` 的内容。
 
 <div class="info">
 
-Note: `~/.nix-channels` is not a symlink to the nix store!
+注意：`~/.nix-channels` 并不是指向 Nix store 的符号链接！
 
 </div>
 
-To update the channel run `nix-channel --update`. That will download the new Nix expressions (descriptions of the packages), create a new generation of the channels profile and unpack it under `~/.nix-defexpr/channels`.
+要更新 channel，运行 `nix-channel --update`。它会下载新的 Nix 表达式（软件包描述），为 channels profile 创建一个新代，并将其解包到 `~/.nix-defexpr/channels` 下。
 
-This is quite similar to `apt-get update`. (See [this table](https://wiki.nixos.org/wiki/Cheatsheet) for a rough mapping between Ubuntu and NixOS package management.)
+这和 `apt-get update` 很相似。（参见[这张表](https://wiki.nixos.org/wiki/Cheatsheet)了解 Ubuntu 与 NixOS 软件包管理之间的大致对应关系。）
 
-## Conclusion
+## 结论
 
-We learned how to query the user environment and to manipulate it by installing and uninstalling software. Upgrading software is also straightforward, as you can read in [the manual](https://nix.dev/manual/nix/stable/command-ref/nix-env/upgrade) (`nix-env -u` will upgrade all packages in the environment).
+我们学习了如何查询用户环境，以及通过安装和卸载软件来操作它。升级软件也很简单，你可以在[手册](https://nix.dev/manual/nix/stable/command-ref/nix-env/upgrade)中读到（`nix-env -u` 会升级环境中的所有软件包）。
 
-Every time we change the environment, a new generation is created. Switching between generations is easy and immediate.
+每当我们改变环境，就会创建一个新代。在代之间切换既简单又即时。
 
-Then we learned how to query the store. We inspected the dependencies and reverse dependencies of store paths.
+接着我们学习了如何查询 store。我们检视了存储路径的依赖和反向依赖。
 
-We saw how symlinks are used to compose paths from the Nix store, a useful trick.
+我们看到了如何用符号链接来组合来自 Nix store 的路径，这是一个很实用的技巧。
 
-A quick analogy with programming languages: you have the heap with all the objects, that corresponds to the Nix store. You have objects that point to other objects, those correspond to derivations. This is a suggestive metaphor, but will it be the right path?
+用一个编程语言的类比来快速说明：你有一个存放所有对象的堆（heap），它对应 Nix store；你有指向其他对象的对象，它们对应 derivation。这是一个耐人寻味的比喻，但它会是一条正确的道路吗？
 
-## Next pill
+## 下一篇药丸
 
-...we will learn the basics of the Nix language. The Nix language is used to describe how to build derivations, and it's the basis for everything else, including NixOS. Therefore it's very important to understand both the syntax and the semantics of the language.
+……我们将学习 Nix 语言的基础。Nix 语言用于描述如何构建 derivation，它是一切其他内容的基础，包括 NixOS。因此，理解这门语言的语法和语义都非常重要。

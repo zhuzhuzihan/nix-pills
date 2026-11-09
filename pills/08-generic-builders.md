@@ -1,16 +1,16 @@
-# Generic Builders
+# 通用 builder
 
-Welcome to the 8th Nix pill. In the previous [7th pill](07-working-derivation.md) we successfully built a derivation. We wrote a builder script that compiled a C file and installed the binary under the nix store.
+欢迎来到第 8 篇 Nix 药丸。在上一篇[第 7 篇药丸](07-working-derivation.md)中，我们成功构建了一个 derivation（派生）。我们编写了一个 builder 脚本，它编译一个 C 文件并把二进制文件安装到 nix store 下。
 
-In this post, we will generalize the builder script, write a Nix expression for [GNU hello world](https://www.gnu.org/software/hello/) and create a wrapper around the derivation built-in function.
+在这篇文章中，我们将把 builder 脚本泛化，为 [GNU hello world](https://www.gnu.org/software/hello/) 编写一个 Nix 表达式，并围绕 derivation 内置函数创建一个包装器。
 
-## Packaging GNU hello world
+## 打包 GNU hello world
 
-In the previous pill we packaged a simple .c file, which was being compiled with a raw gcc call. That's not a good example of a project. Many use autotools, and since we're going to generalize our builder, it would be better to do it with the most used build system.
+在上一篇药丸中，我们打包了一个简单的 .c 文件，它是通过直接调用 gcc 来编译的。这并不是一个项目的好例子。许多项目使用 autotools，既然我们要泛化 builder，最好就用最常用的构建系统来做。
 
-[GNU hello world](https://www.gnu.org/software/hello/), despite its name, is a simple yet complete project which uses autotools. Fetch the latest tarball here: <https://ftp.gnu.org/gnu/hello/hello-2.12.1.tar.gz>.
+[GNU hello world](https://www.gnu.org/software/hello/)，尽管名字如此，其实是一个简单而完整的项目，它使用 autotools。在这里获取最新的压缩包：<https://ftp.gnu.org/gnu/hello/hello-2.12.1.tar.gz>。
 
-Let's create a builder script for GNU hello world, hello_builder.sh:
+让我们为 GNU hello world 创建一个 builder 脚本，hello_builder.sh：
 
 ```sh
 export PATH="$gnutar/bin:$gcc/bin:$gnumake/bin:$coreutils/bin:$gawk/bin:$gzip/bin:$gnugrep/bin:$gnused/bin:$bintools/bin"
@@ -21,7 +21,7 @@ make
 make install
 ```
 
-And the derivation hello.nix:
+以及 derivation hello.nix：
 
 ```nix
 let
@@ -48,9 +48,9 @@ derivation {
 ```
 
 <div class="info">
-<h4>Nix on darwin</h4>
+<h4>darwin 上的 Nix</h4>
 
-Darwin (i.e. macOS) builds typically use `clang` rather than `gcc` for a C compiler. We can adapt this early example for darwin by using this modified version of `hello.nix`:
+Darwin（即 macOS）的构建通常使用 `clang` 而不是 `gcc` 作为 C 编译器。我们可以使用下面这个修改版的 `hello.nix` 来让这个早期示例适配 darwin：
 
 ```nix
 let
@@ -76,17 +76,17 @@ derivation {
 }
 ```
 
-Later, we will show how Nix can automatically handle these differences. For now, please be just aware that changes similar to the above may be needed in what follows.
+稍后我们会展示 Nix 如何自动处理这些差异。现在请记住，在后文中可能需要进行与上面类似的修改。
 
 </div>
 
-Now build it with `nix-build hello.nix` and you can launch `result/bin/hello`. Nothing easier, but do we have to create a builder.sh for each package? Do we always have to pass the dependencies to the `derivation` function?
+现在用 `nix-build hello.nix` 构建它，然后就可以运行 `result/bin/hello` 了。再简单不过，但问题是我们必须为每个软件包都创建一个 builder.sh 吗？我们总是要把依赖传给 `derivation` 函数吗？
 
-Please note the `--prefix=$out` we were talking about in the [previous pill](07-working-derivation.md).
+请注意我们在[上一篇药丸](07-working-derivation.md)中谈论过的 `--prefix=$out`。
 
-## A generic builder
+## 一个通用的 builder
 
-Let's create a generic `builder.sh` for autotools projects:
+让我们为 autotools 项目创建一个通用的 `builder.sh`：
 
 ```sh
 set -e
@@ -109,23 +109,23 @@ make
 make install
 ```
 
-What do we do here?
+我们在这里做了什么？
 
-1.  Exit the build on any error with `set -e`.
+1.  使用 `set -e`，出错时退出构建。
 
-2.  First `unset PATH`, because it's initially set to a non-existent path.
+2.  首先执行 `unset PATH`，因为 PATH 最初被设成了一个不存在的路径。
 
-3.  We'll see this below in detail, however for each path in `$buildInputs`, we append `bin` to `PATH`.
+3.  我们会在下文详细讲解这一点：对 `$buildInputs` 中的每个路径，我们把它的 `bin` 追加到 `PATH` 上。
 
-4.  Unpack the source.
+4.  解开源码。
 
-5.  Find a directory where the source has been unpacked and `cd` into it.
+5.  找到源码解压出来的目录，并 `cd` 进去。
 
-6.  Once we're set up, compile and install.
+6.  准备就绪后，编译并安装。
 
-As you can see, there's no reference to "hello" in the builder anymore. It still makes several assumptions, but it's certainly more generic.
+可以看到，builder 中已经没有任何对 "hello" 的引用了。它仍然做了若干假设，但确实更通用了。
 
-Now let's rewrite `hello.nix`:
+现在让我们重写 `hello.nix`：
 
 ```nix
 let
@@ -151,9 +151,9 @@ derivation {
 }
 ```
 
-All clear, except that buildInputs. However it's easier than any black magic you are thinking of at this moment.
+一切都清楚了，除了那个 buildInputs。不过它比你现在正在想的任何黑魔法都要简单。
 
-Nix is able to convert a list to a string. It first converts the elements to strings, and then concatenates them separated by a space:
+Nix 能够把列表转换成字符串。它先把各个元素转换为字符串，然后用空格分隔并把它们拼接起来：
 
 ```console
 nix-repl> builtins.toString 123
@@ -162,7 +162,7 @@ nix-repl> builtins.toString [ 123 456 ]
 "123 456"
 ```
 
-Recall that derivations can be converted to a string, hence:
+回想一下，derivation 也可以被转换成字符串，因此：
 
 ```console
 nix-repl> :l <nixpkgs>
@@ -173,15 +173,15 @@ nix-repl> builtins.toString [ gnugrep gnused ]
 "/nix/store/g5gdylclfh6d224kqh9sja290pk186xd-gnugrep-2.14 /nix/store/krgdc4sknzpw8iyk9p20lhqfd52kjmg0-gnused-4.2.2"
 ```
 
-Simple! The buildInputs variable is a string with out paths separated by space, perfect for bash usage in a for loop.
+很简单！buildInputs 变量就是一个以空格分隔各输出路径的字符串，非常适合在 bash 的 for 循环中使用。
 
-## A more convenient derivation function
+## 一个更方便的 derivation 函数
 
-We managed to write a builder that can be used for multiple autotools projects. But in the hello.nix expression we are specifying tools that are common to more projects; we don't want to pass them every time.
+我们已经成功写出了一个可用于多个 autotools 项目的 builder。但在 hello.nix 表达式中，我们指定的那些工具是许多项目共有的；我们不想每次都传入它们。
 
-A natural approach would be to create a function that accepts an attribute set, similar to the one used by the derivation function, and merge it with another attribute set containing values common to many projects.
+一个自然的做法是创建一个函数，它接受一个属性集（类似于 derivation 函数所接受的那个），并把它与另一个包含许多项目共有值的属性集合并。
 
-Create `autotools.nix`:
+创建 `autotools.nix`：
 
 ```nix
 pkgs: attrs:
@@ -207,21 +207,21 @@ in
 derivation (defaultAttrs // attrs)
 ```
 
-Ok now we have to remember a little about [Nix functions](05-functions-and-imports.md). The whole nix expression of this `autotools.nix` file will evaluate to a function. This function accepts a parameter `pkgs`, then returns a function which accepts a parameter `attrs`.
+好了，现在我们得稍微回顾一下 [Nix 函数](05-functions-and-imports.md)。这个 `autotools.nix` 文件的整个 Nix 表达式会求值为一个函数。这个函数接受一个参数 `pkgs`，然后返回一个接受参数 `attrs` 的函数。
 
-The body of the function is simple, yet at first sight it might be hard to grasp:
+函数体很简单，但乍一看可能不太容易理解：
 
-1.  First drop in the scope the magic `pkgs` attribute set.
+1.  首先把那个神奇的 `pkgs` 属性集放进作用域。
 
-2.  Within a let expression we define a helper variable, `defaultAttrs`, which serves as a set of common attributes used in derivations.
+2.  在 let 表达式中我们定义一个辅助变量 `defaultAttrs`，它充当 derivation 中常用属性的一组默认值。
 
-3.  Finally we create the derivation with that strange expression, (`defaultAttrs // attrs`).
+3.  最后我们用那个奇怪的表达式（`defaultAttrs // attrs`）创建 derivation。
 
-The [// operator](https://nix.dev/manual/nix/stable/language/operators.html#update) is an operator between two sets. The result is the union of the two sets. In case of conflicts between attribute names, the value on the right set is preferred.
+[// 运算符](https://nix.dev/manual/nix/stable/language/operators.html#update)是作用于两个集合之间的运算符。结果是两个集合的并集。当属性名发生冲突时，右侧集合中的值优先。
 
-So we use `defaultAttrs` as base set, and add (or override) the attributes from `attrs`.
+所以我们把 `defaultAttrs` 用作基础集合，再添加（或 override，覆盖）来自 `attrs` 的属性。
 
-A couple of examples ought to be enough to clear out the behavior of the operator:
+几个例子就足以说明这个运算符的行为：
 
 ```console
 nix-repl> { a = "b"; } // { c = "d"; }
@@ -230,9 +230,9 @@ nix-repl> { a = "b"; } // { a = "c"; }
 { a = "c"; }
 ```
 
-**Exercise:** Complete the new `builder.sh` by adding `$baseInputs` in the `for` loop together with `$buildInputs`. As you noticed, we passed that new variable in the derivation. Instead of merging buildInputs with the base ones, we prefer to preserve buildInputs as seen by the caller, so we keep them separated. Just a matter of choice.
+**练习：**完善新的 `builder.sh`，在 `for` 循环中把 `$baseInputs` 与 `$buildInputs` 一起处理。如你所见，我们在 derivation 中传入了这个新变量。我们没有把 buildInputs 与基础输入合并，而是让调用者看到的 buildInputs 保持原样，所以把它们分开了。这只是取舍问题。
 
-Then we rewrite `hello.nix` as follows:
+接着我们按如下方式重写 `hello.nix`：
 
 ```nix
 let
@@ -245,28 +245,28 @@ mkDerivation {
 }
 ```
 
-Finally! We got a very simple description of a package! Below are a couple of remarks that you may find useful as you're continuing to understand the nix language:
+终于！我们得到了一个非常简洁的软件包描述！下面是一些你可能在学习 Nix 语言的过程中会用到的备注：
 
-- We assigned to pkgs the import that we did in the previous expressions in the "with". Don't be afraid, it's that straightforward.
+- 我们把之前在表达式中用 "with" 引入的内容赋给了 pkgs。别担心，就是这么简单直接。
 
-- The mkDerivation variable is a nice example of partial application, look at it as `(import ./autotools.nix) pkgs`. First we import the expression, then we apply the `pkgs` parameter. That will give us a function that accepts the attribute set `attrs`.
+- mkDerivation 变量是部分应用（partial application）的一个很好的例子，可以把它看作 `(import ./autotools.nix) pkgs`。我们先导入表达式，然后应用 `pkgs` 参数。这会返回一个接受属性集 `attrs` 的函数。
 
-- We create the derivation specifying only name and src. If the project eventually needed other dependencies to be in PATH, then we would simply add those to buildInputs (not specified in hello.nix because empty).
+- 我们创建 derivation 时只指定了 name 和 src。如果项目最终还需要其他依赖出现在 PATH 中，我们只需把它们加入 buildInputs（hello.nix 中没有指定，因为它是空的）。
 
-Note we didn't use any other library. Special C flags may be needed to find include files of other libraries at compile time, and ld flags at link time.
+注意我们没有使用任何其他库。在编译时可能需要特殊的 C 编译参数来找到其他库的头文件，链接时则可能需要 ld 参数。
 
-## Conclusion
+## 结论
 
-Nix gives us the bare metal tools for creating derivations, setting up a build environment and storing the result in the nix store.
+Nix 为我们提供了创建 derivation、搭建构建环境以及把结果存入 nix store 的最底层工具。
 
-Out of this pill we managed to create a generic builder for autotools projects, and a function `mkDerivation` that composes by default the common components used in autotools projects instead of repeating them in all the packages we would write.
+通过这篇药丸，我们成功地为 autotools 项目创建了一个通用 builder，还创建了一个 `mkDerivation` 函数，它默认组合了 autotools 项目常用的组件，而不必在我们编写的每个软件包中重复它们。
 
-We are familiarizing ourselves with the way a Nix system grows up: it's about creating and composing derivations with the Nix language.
+我们正在熟悉 Nix 体系的成长方式：用 Nix 语言创建并组合 derivation。
 
-Analogy: in C you create objects in the heap, and then you compose them inside new objects. Pointers are used to refer to other objects.
+类比：在 C 中，你在堆上创建对象，然后把它们组合进新的对象里。指针被用来引用其他对象。
 
-In Nix you create derivations stored in the nix store, and then you compose them by creating new derivations. Store paths are used to refer to other derivations.
+在 Nix 中，你创建存储在 nix store 中的 derivation，然后通过创建新的 derivation 来组合它们。存储路径被用来引用其他 derivation。
 
-## Next pill
+## 下一篇药丸
 
-...we will talk a little about runtime dependencies. Is the GNU hello world package self-contained? What are its runtime dependencies? We only specified build dependencies by means of using other derivations in the "hello" derivation.
+……我们将聊一聊运行时依赖。GNU hello world 软件包是自包含的吗？它的运行时依赖是什么？我们只在 "hello" derivation 中通过使用其他 derivation 指定了构建依赖。

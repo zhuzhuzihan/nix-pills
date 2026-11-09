@@ -1,36 +1,36 @@
-# Nixpkgs Parameters
+# Nixpkgs 参数
 
-Welcome to the 16th Nix pill. In the previous [15th](15-nix-search-paths.md) pill we've realized how nix finds expressions with the angular brackets syntax, so that we finally know where `<nixpkgs>` is located on our system.
+欢迎来到第 16 篇 Nix 药丸。在上一篇[第 15 篇](15-nix-search-paths.md)药丸中，我们弄清了 nix 如何通过尖括号语法查找表达式，所以我们终于知道了 `<nixpkgs>` 在系统中的位置。
 
-We can start diving into the [nixpkgs repository](https://github.com/NixOS/nixpkgs), through all the various tools and design patterns. Please note that also `nixpkgs` has its own manual, underlying the difference between the general `nix` language and the `nixpkgs` repository.
+我们可以开始深入 [nixpkgs 仓库](https://github.com/NixOS/nixpkgs)，领略其中各种各样的工具和设计模式。请注意，`nixpkgs` 也有自己的手册，它强调了通用的 `nix` 语言与 `nixpkgs` 仓库之间的区别。
 
-## The default.nix expression
+## default.nix 表达式
 
-We will not start inspecting packages at the beginning, rather the general structure of `nixpkgs`.
+我们不会一开始就去检查各个软件包，而是先看 `nixpkgs` 的整体结构。
 
-In our custom repository we created a `default.nix` which composed the expressions of the various packages.
+在我们的自定义仓库中，我们创建了一个 `default.nix` 来组合各个软件包的表达式。
 
-Also `nixpkgs` has its own [default.nix](https://github.com/NixOS/nixpkgs/blob/master/default.nix), which is the one being loaded when referring to `<nixpkgs>`. It does a simple thing: check whether the `nix` version is at least 1.7 (at the time of writing this blog post). Then import [pkgs/top-level/all-packages.nix](https://github.com/NixOS/nixpkgs/blob/master/pkgs/top-level/all-packages.nix). From now on, we will refer to this set of packages as **pkgs**.
+`nixpkgs` 也有自己的 [default.nix](https://github.com/NixOS/nixpkgs/blob/master/default.nix)，当引用 `<nixpkgs>` 时加载的就是它。它做一件简单的事：检查 `nix` 版本是否至少为 1.7（在撰写这篇博文时）。然后导入 [pkgs/top-level/all-packages.nix](https://github.com/NixOS/nixpkgs/blob/master/pkgs/top-level/all-packages.nix)。从现在起，我们将把这个软件包集合称为 **pkgs**。
 
-The `all-packages.nix` is then the file that composes all the packages. Note the `pkgs/` subdirectory, while nixos is in the `nixos/` subdirectory.
+`all-packages.nix` 就是组合所有软件包的文件。注意 `pkgs/` 子目录，而 nixos 位于 `nixos/` 子目录中。
 
-The `all-packages.nix` is a bit contrived. First of all, it's a function. It accepts a couple of interesting parameters:
+`all-packages.nix` 有几分刻意为之。首先，它是一个函数。它接受几个有意思的参数：
 
-- `system`: defaults to the current system
+- `system`：默认为当前系统
 
-- `config`: defaults to null
+- `config`：默认为 null
 
-- others...
+- 其他……
 
-The **system** parameter, as per comment in the expression, it's the system for which the packages will be built. It allows for example to install i686 packages on amd64 machines.
+**system** 参数，按照表达式中的注释所说，是为这些软件包进行构建的目标系统。例如，它允许在 amd64 机器上安装 i686 软件包。
 
-The **config** parameter is a simple attribute set. Packages can read some of its values and change the behavior of some derivations.
+**config** 参数是一个简单的属性集合。软件包可以读取其中的一些值，并改变某些 derivation 的行为。
 
-## The system parameter
+## system 参数
 
-You will find this parameter in many other .nix expressions (e.g. release expressions). The reason is that, given pkgs accepts a system parameter, then whenever you want to import pkgs you also want to pass through the value of system. E.g.:
+你会在许多其他 .nix 表达式中（例如 release 表达式）看到这个参数。原因是，既然 pkgs 接受一个 system 参数，那么每当你想导入 pkgs 时，你也会想把 system 的值传递下去。例如：
 
-`myrelease.nix`:
+`myrelease.nix`：
 
 ```nix
 { system ? builtins.currentSystem }:
@@ -39,25 +39,25 @@ let pkgs = import <nixpkgs> { inherit system; };
 ...
 ```
 
-Why is it useful? With this parameter it's very easy to select a set of packages for a particular system. For example:
+它为什么有用？有了这个参数，为特定系统选择一组软件包就非常容易了。例如：
 
 ```console
 nix-build -A psmisc --argstr system i686-linux
 ```
 
-This will build the `psmisc` derivation for i686-linux instead of x86_64-linux. This concept is very similar to multi-arch of Debian.
+这将为 i686-linux 而不是 x86_64-linux 构建 `psmisc` derivation。这个概念与 Debian 的 multi-arch 非常相似。
 
-The setup for cross compiling is also in `nixpkgs`, however it's a little contrived to talk about it and I don't know much of it either.
+交叉编译的配置也在 `nixpkgs` 中，不过讨论它有点绕，而且我对它也不太了解。
 
-## The config parameter
+## config 参数
 
-I'm sure on the wiki or other manuals you've read about `~/.config/nixpkgs/config.nix` (previously `~/.nixpkgs/config.nix`) and I'm sure you've wondered whether that's hardcoded in nix. It's not, it's in [nixpkgs](https://github.com/NixOS/nixpkgs/blob/32c523914fdb8bf9cc7912b1eba023a8daaae2e8/pkgs/top-level/impure.nix#L28).
+我相信你一定在 wiki 或其他手册上读到过 `~/.config/nixpkgs/config.nix`（以前是 `~/.nixpkgs/config.nix`），也一定好奇过它是否硬编码在 nix 里。它不是，它在 [nixpkgs](https://github.com/NixOS/nixpkgs/blob/32c523914fdb8bf9cc7912b1eba023a8daaae2e8/pkgs/top-level/impure.nix#L28) 中。
 
-The `all-packages.nix` expression accepts the `config` parameter. If it's `null`, then it reads the `NIXPKGS_CONFIG` environment variable. If not specified, `nixpkgs` will pick `$HOME/.config/nixpkgs/config.nix`.
+`all-packages.nix` 表达式接受 `config` 参数。如果它是 `null`，就会读取 `NIXPKGS_CONFIG` 环境变量。如果没有指定，`nixpkgs` 会选用 `$HOME/.config/nixpkgs/config.nix`。
 
-After determining `config.nix`, it will be imported as a nix expression, and that will be the value of `config` (in case it hasn't been passed as parameter to import `<nixpkgs>`).
+确定 `config.nix` 之后，它会作为一个 nix 表达式被导入，其结果就是 `config` 的值（前提是它没有被作为参数传入 `<nixpkgs>` 的 import）。
 
-The `config` is available in the resulting repository:
+`config` 在最终的仓库中是可用的：
 
 ```console
 $ nix repl
@@ -69,21 +69,21 @@ nix-repl> pkgs.config
 { foo = "bar"; }
 ```
 
-What attributes go in `config` is a matter of convenience and conventions.
+哪些属性放进 `config`，这是一个看便利性和约定的问题。
 
-For example, `config.allowUnfree` is an attribute that forbids building packages that have an unfree license by default. The `config.pulseaudio` setting tells whether to build packages with `pulseaudio` support or not where applicable and when the derivation obeys to the setting.
+例如，`config.allowUnfree` 是一个属性，它默认禁止构建带有非自由（unfree）许可证的软件包。`config.pulseaudio` 设置则决定在适用的地方、且 derivation 遵循该设置时，是否构建带 `pulseaudio` 支持的软件包。
 
-## About .nix functions
+## 关于 .nix 函数
 
-A `.nix` file contains a nix expression. Thus it can also be a function. I remind you that `nix-build` expects the expression to return a derivation. Therefore it's natural to return straight a derivation from a `.nix` file. However, it's also very natural for the `.nix` file to accept some parameters, in order to tweak the derivation being returned.
+一个 `.nix` 文件包含一个 nix 表达式。因此它也可以是一个函数。提醒你一下，`nix-build` 期望表达式返回一个 derivation。所以直接从 `.nix` 文件返回一个 derivation 是很自然的。不过，`.nix` 文件接受一些参数以调整所返回的 derivation，同样是非常自然的。
 
-In this case, nix does a trick:
+在这种情况下，nix 玩了一个小把戏：
 
-- If the expression is a derivation, build it.
+- 如果表达式是一个 derivation，就构建它。
 
-- If the expression is a function, call it and build the resulting derivation.
+- 如果表达式是一个函数，就调用它并构建得到的 derivation。
 
-For example you can nix-build the `.nix` file below:
+例如你可以对下面的 `.nix` 文件执行 nix-build：
 
 ```nix
 { pkgs ? import <nixpkgs> {} }:
@@ -91,18 +91,18 @@ For example you can nix-build the `.nix` file below:
 pkgs.psmisc
 ```
 
-Nix is able to call the function because the pkgs parameter has a default value. This allows you to pass a different value for pkgs using the `--arg` option.
+Nix 能够调用这个函数，因为 pkgs 参数有默认值。这允许你使用 `--arg` 选项为 pkgs 传入不同的值。
 
-Does it work if you have a function returning a function that returns a derivation? No, Nix only calls the function it encounters once.
+如果是一个返回「返回 derivation 的函数」的函数，还能工作吗？不能，Nix 只调用它遇到的那一次函数。
 
-## Conclusion
+## 结论
 
-We've unleashed the `<nixpkgs>` repository. It's a function that accepts some parameters, and returns the set of all packages. Due to laziness, only the accessed derivations will be built.
+我们揭开了 `<nixpkgs>` 仓库的面纱。它是一个接受一些参数、并返回所有软件包集合的函数。得益于惰性求值，只有被访问到的 derivation 才会被构建。
 
-You can use this repository to build your own packages as we've seen in the previous pill when creating our own repository.
+你可以像上一篇药丸中创建我们自己的仓库时所看到的那样，用这个仓库来构建你自己的软件包。
 
-Lately I'm a little busy with the NixOS 14.11 release and other stuff, and I'm also looking toward migrating from blogger to a more coder-oriented blogging platform. So sorry for the delayed and shorter pills :)
+最近我有点忙于 NixOS 14.11 的发布和其他事情，同时我也在考虑从 blogger 迁移到一个更面向代码的博客平台。所以这篇药丸延迟了而且比较短，抱歉啦 :)
 
-## Next pill
+## 下一篇药丸
 
-...we will talk about overriding packages in the `nixpkgs` repository. What if you want to change some options of a library and let all other packages pick the new library? One possibility is to use, like described above, the `config` parameter when applicable. The other possibility is to override derivations.
+……我们将讨论在 `nixpkgs` 仓库中进行 override（覆盖）。如果你想修改某个库的一些选项，并让所有其他软件包使用新库，该怎么办？一种可能是像上面描述的那样，在适用时使用 `config` 参数。另一种可能是 override derivation。

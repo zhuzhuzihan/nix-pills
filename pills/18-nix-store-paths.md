@@ -1,20 +1,20 @@
-# Nix Store Paths
+# Nix 存储路径
 
-Welcome to the 18th Nix pill. In the previous [17th](17-nixpkgs-overriding-packages.md) pill we have scratched the surface of the `nixpkgs` repository structure. It is a set of packages, and it's possible to override such packages so that all other packages will use the overrides.
+欢迎来到第 18 篇 Nix 药丸。在上一篇[第 17 篇](17-nixpkgs-overriding-packages.md)药丸中，我们初步了解了 `nixpkgs` 仓库的结构。它是一个软件包集合，并且可以对这些软件包进行 override（覆盖），使所有其他软件包都使用覆盖后的版本。
 
-Before reading existing derivations, I'd like to talk about store paths and how they are computed. In particular we are interested in fixed store paths that depend on an integrity hash (e.g. a sha256), which is usually applied to source tarballs.
+在阅读现有的 derivation（派生）之前，我想先谈谈存储路径（store path）以及它们是如何计算的。我们尤其关心那些依赖于完整性哈希（例如 sha256）的固定存储路径，这种哈希通常用于源码压缩包。
 
-The way store paths are computed is a little contrived, mostly due to historical reasons. Our reference will be the [Nix source code](https://github.com/NixOS/nix/blob/07f992a74b64f4376d5b415d0042babc924772f3/src/libstore/store-api.cc#L197).
+存储路径的计算方式有点绕，主要是历史原因造成的。我们的参考依据是 [Nix 源代码](https://github.com/NixOS/nix/blob/07f992a74b64f4376d5b415d0042babc924772f3/src/libstore/store-api.cc#L197)。
 
-## Source paths
+## 源码路径
 
-Let's start simple. You know nix allows relative paths to be used, such that the file or directory is stored in the nix store, that is `./myfile` gets stored into `/nix/store/.......` We want to understand how is the store path generated for such a file:
+从简单的开始。你知道 nix 允许使用相对路径，这样文件或目录会被存入 nix store，也就是说 `./myfile` 会被存储到 `/nix/store/.......` 中。我们想弄清楚，对于这样的文件，存储路径是如何生成的：
 
 ```console
 $ echo mycontent > myfile
 ```
 
-I remind you, the simplest derivation you can write has a `name`, a `builder` and the `system`:
+提醒一下，你能写出的最简单的 derivation 需要一个 `name`、一个 `builder` 和一个 `system`：
 
 ```console
 $ nix repl
@@ -22,7 +22,7 @@ nix-repl> derivation { system = "x86_64-linux"; builder = ./myfile; name = "foo"
 «derivation /nix/store/y4h73bmrc9ii5bxg6i7ck6hsf5gqv8ck-foo.drv»
 ```
 
-Now inspect the .drv to see where is `./myfile` being stored:
+现在检查这个 .drv，看看 `./myfile` 被存储到了哪里：
 
 ```console
 $ nix derivation show /nix/store/y4h73bmrc9ii5bxg6i7ck6hsf5gqv8ck-foo.drv
@@ -50,59 +50,59 @@ $ nix derivation show /nix/store/y4h73bmrc9ii5bxg6i7ck6hsf5gqv8ck-foo.drv
 }
 ```
 
-Great, how did nix decide to use `xv2iccirbrvklck36f1g7vldn5v58vck` ? Keep looking at the nix comments.
+很好，nix 是怎么决定使用 `xv2iccirbrvklck36f1g7vldn5v58vck` 的呢？继续看 nix 源码中的注释。
 
-**Note:** doing `nix-store --add myfile` will store the file in the same store path.
+**注意：** 执行 `nix-store --add myfile` 会把该文件存入相同的存储路径。
 
-### Step 1, compute the hash of the file
+### 第 1 步：计算文件的哈希
 
-The comments tell us to first compute the sha256 of the NAR serialization of the file. Can be done in two ways:
+注释告诉我们，先计算文件 NAR 序列化形式的 sha256。可以用两种方式完成：
 
 ```console
 $ nix-hash --type sha256 myfile
 2bfef67de873c54551d884fdab3055d84d573e654efa79db3c0d7b98883f9ee3
 ```
 
-Or:
+或者：
 
 ```console
 $ nix-store --dump myfile|sha256sum
 2bfef67de873c54551d884fdab3055d84d573e654efa79db3c0d7b98883f9ee3
 ```
 
-In general, Nix understands two contents: flat for regular files, or recursive for NAR serializations which can be anything.
+一般而言，Nix 理解两种内容：针对普通文件的 flat（平铺），以及针对 NAR 序列化（可以是任何东西）的 recursive（递归）。
 
-### Step 2, build the string description
+### 第 2 步：构建字符串描述
 
-Then nix uses a special string which includes the hash, the path type and the file name. We store this in another file:
+然后 nix 使用一个特殊的字符串，其中包含哈希、路径类型和文件名。我们把它存进另一个文件：
 
 ```console
 $ echo -n "source:sha256:2bfef67de873c54551d884fdab3055d84d573e654efa79db3c0d7b98883f9ee3:/nix/store:myfile" > myfile.str
 ```
 
-### Step 3, compute the final hash
+### 第 3 步：计算最终哈希
 
-Finally the comments tell us to compute the base-32 representation of the first 160 bits (truncation) of a sha256 of the above string:
+最后，注释告诉我们，计算上述字符串的 sha256 的前 160 位（截断）的 base-32 表示：
 
 ```console
 $ nix-hash --type sha256 --truncate --base32 --flat myfile.str
 xv2iccirbrvklck36f1g7vldn5v58vck
 ```
 
-## Output paths
+## 输出路径
 
-Output paths are usually generated for derivations. We use the above example because it's simple. Even if we didn't build the derivation, nix knows the out path `hs0yi5n5nw6micqhy8l1igkbhqdkzqa1`. This is because the out path only depends on inputs.
+输出路径通常是为 derivation 生成的。我们使用上面的例子，因为它比较简单。即使我们没有构建这个 derivation，nix 也已经知道 out 路径 `hs0yi5n5nw6micqhy8l1igkbhqdkzqa1`。这是因为 out 路径只取决于输入。
 
-It's computed in a similar way to source paths, except that the .drv is hashed and the type of derivation is `output:out`. In case of multiple outputs, we may have different `output:<id>`.
+它的计算方式与源码路径类似，不同之处在于被哈希的是 .drv，并且 derivation 的类型是 `output:out`。在多输出的情况下，我们可能会有不同的 `output:<id>`。
 
-At the time nix computes the out path, the .drv contains an empty string for each out path. So what we do is getting our .drv and replacing the out path with an empty string:
+当 nix 计算 out 路径时，.drv 中每个 out 路径的位置都是一个空字符串。所以我们要做的是取出我们的 .drv，并把 out 路径替换为空字符串：
 
 ```console
 $ cp -f /nix/store/y4h73bmrc9ii5bxg6i7ck6hsf5gqv8ck-foo.drv myout.drv
 $ sed -i 's,/nix/store/hs0yi5n5nw6micqhy8l1igkbhqdkzqa1-foo,,g' myout.drv
 ```
 
-The `myout.drv` is the .drv state in which nix is when computing the out path for our derivation:
+这个 `myout.drv` 就是 nix 在为我们的 derivation 计算 out 路径时 .drv 所处的状态：
 
 ```console
 $ sha256sum myout.drv
@@ -112,21 +112,21 @@ $ nix-hash --type sha256 --truncate --base32 --flat myout.str
 hs0yi5n5nw6micqhy8l1igkbhqdkzqa1
 ```
 
-Then nix puts that out path in the .drv, and that's it.
+然后 nix 把这个 out 路径放进 .drv，就是这样。
 
-In case the .drv has input derivations, that is it references other .drv, then such .drv paths are replaced by this same algorithm which returns a hash.
+如果 .drv 有输入 derivation（即它引用了其他 .drv），那么这些 .drv 路径会被同一个算法替换成返回的哈希。
 
-In other words, you get a final .drv where every other .drv path is replaced by its hash.
+换句话说，你最终得到的 .drv 中，每个其他 .drv 的路径都被替换成了它的哈希。
 
-## Fixed-output paths
+## 固定输出路径
 
-Finally, the other most used kind of path is when we know beforehand an integrity hash of a file. This is usual for tarballs.
+最后，另一种最常用的路径类型是：我们事先就知道某个文件的完整性哈希。这对源码压缩包来说很常见。
 
-A derivation can take three special attributes: `outputHashMode`, `outputHash` and `outputHashAlgo` which are well documented in the [nix manual](https://nix.dev/manual/nix/stable/language/advanced-attributes).
+一个 derivation 可以接受三个特殊属性：`outputHashMode`、`outputHash` 和 `outputHashAlgo`，它们在 [nix 手册](https://nix.dev/manual/nix/stable/language/advanced-attributes)中有完善的文档。
 
-The builder must create the out path and make sure its hash is the same as the one declared with `outputHash`.
+builder 必须创建 out 路径，并确保其哈希与 `outputHash` 声明的哈希一致。
 
-Let's say our builder should create a file whose contents is `mycontent`:
+假设我们的 builder 应该创建一个内容为 `mycontent` 的文件：
 
 ```console
 $ echo mycontent > myfile
@@ -136,7 +136,7 @@ nix-repl> derivation { name = "bar"; system = "x86_64-linux"; builder = "none"; 
 «derivation /nix/store/ymsf5zcqr9wlkkqdjwhqllgwa97rff5i-bar.drv»
 ```
 
-Inspect the .drv and see that it also stored the fact that it's a fixed-output derivation with sha256 algorithm, compared to the previous examples:
+检查这个 .drv，与前面的例子相比，可以看到它还记录了这是一个使用 sha256 算法的固定输出（fixed-output）derivation：
 
 ```console
 $ nix derivation show /nix/store/ymsf5zcqr9wlkkqdjwhqllgwa97rff5i-bar.drv
@@ -153,9 +153,9 @@ $ nix derivation show /nix/store/ymsf5zcqr9wlkkqdjwhqllgwa97rff5i-bar.drv
 }
 ```
 
-It doesn't matter which input derivations are being used, the final out path must only depend on the declared hash.
+无论使用了哪些输入 derivation，最终的 out 路径都必须只取决于声明的哈希。
 
-What nix does is to create an intermediate string representation of the fixed-output content:
+nix 的做法是为固定输出内容创建一个中间字符串表示：
 
 ```console
 $ echo -n "fixed:out:sha256:f3f3c4763037e059b4d834eaf68595bbc02ba19f6d2a500dce06d124e2cd99bb:" > mycontent.str
@@ -163,7 +163,7 @@ $ sha256sum mycontent.str
 423e6fdef56d53251c5939359c375bf21ea07aaa8d89ca5798fb374dbcfd7639  myfile.str
 ```
 
-Then proceed as it was a normal derivation output path:
+然后像处理普通的 derivation 输出路径那样继续：
 
 ```console
 $ echo -n "output:out:sha256:423e6fdef56d53251c5939359c375bf21ea07aaa8d89ca5798fb374dbcfd7639:/nix/store:bar" > myfile.str
@@ -171,14 +171,14 @@ $ nix-hash --type sha256 --truncate --base32 --flat myfile.str
 a00d5f71k0vp5a6klkls0mvr1f7sx6ch
 ```
 
-Hence, the store path only depends on the declared fixed-output hash.
+因此，存储路径只取决于声明的固定输出哈希。
 
-## Conclusion
+## 结论
 
-There are other types of store paths, but you get the idea. Nix first hashes the contents, then creates a string description, and the final store path is the hash of this string.
+存储路径还有其他类型，但你应该已经明白其中的原理了。Nix 先对内容做哈希，然后创建一个字符串描述，最终的存储路径就是这个字符串的哈希。
 
-Also we've introduced some fundamentals, in particular the fact that Nix knows beforehand the out path of a derivation since it only depends on the inputs. We've also introduced fixed-output derivations which are especially used by the nixpkgs repository for downloading and verifying source tarballs.
+此外我们还介绍了一些基础知识，特别是 Nix 事先就知道 derivation 的 out 路径这一事实，因为它只取决于输入。我们还介绍了固定输出 derivation，nixpkgs 仓库尤其常用它来下载并校验源码压缩包。
 
-## Next pill
+## 下一篇药丸
 
-...we will introduce `stdenv`. In the previous pills we rolled our own `mkDerivation` convenience function for wrapping the builtin derivation, but the `nixpkgs` repository also has its own convenience functions for dealing with `autotools` projects and other build systems.
+……我们将介绍 `stdenv`。在之前的药丸中，我们自己动手编写了包装内置 derivation 的 `mkDerivation` 便捷函数，而 `nixpkgs` 仓库也有它自己的便捷函数，用来处理 `autotools` 项目和其他构建系统。
