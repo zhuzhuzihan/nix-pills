@@ -34,6 +34,7 @@ git-repository-url = "https://github.com/zhuzhuzihan/nix-pills"
 
 [output.linkcheck2]
 follow-web-links = true
+optional = true
 
 # To build the epub version, run:
 # mdbook-epub --standalone true
