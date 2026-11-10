@@ -16,4 +16,4 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
 
       - name: Build the book
-        run: nix-build release.nix
+        run: nix-build release.nix -A html-split
