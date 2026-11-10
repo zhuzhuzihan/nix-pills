@@ -8,7 +8,6 @@
     nativeBuildInputs = with pkgs; [
       mdbook
       cacert
-      mdbook-linkcheck2
     ];
 
     buildPhase = ''
