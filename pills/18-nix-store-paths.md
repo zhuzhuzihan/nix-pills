@@ -122,7 +122,7 @@ hs0yi5n5nw6micqhy8l1igkbhqdkzqa1
 
 最后，另一种最常用的路径类型是：我们事先就知道某个文件的完整性哈希。这对源码压缩包来说很常见。
 
-一个 derivation 可以接受三个特殊属性：`outputHashMode`、`outputHash` 和 `outputHashAlgo`，它们在 [nix 手册](https://nix.dev/manual/nix/stable/language/advanced-attributes)中有完善的文档。
+一个 derivation 可以接受三个特殊属性：`outputHashMode`、`outputHash` 和 `outputHashAlgo`，它们在 [nix 手册](https://nix-doc.mczihan.link/language/advanced-attributes)中有完善的文档。
 
 builder 必须创建 out 路径，并确保其哈希与 `outputHash` 声明的哈希一致。
 

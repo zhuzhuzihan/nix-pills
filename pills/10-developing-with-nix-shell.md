@@ -8,7 +8,7 @@
 
 ## 什么是 `nix-shell`？
 
-[nix-shell](https://nix.dev/manual/nix/stable/command-ref/nix-shell) 工具在设置好研究（hack）一个 derivation 所需的环境变量之后，把我们带进一个 shell。它不会构建这个 derivation；它只是做准备工作，以便我们手动运行构建步骤。
+[nix-shell](https://nix-doc.mczihan.link/command-ref/nix-shell) 工具在设置好研究（hack）一个 derivation 所需的环境变量之后，把我们带进一个 shell。它不会构建这个 derivation；它只是做准备工作，以便我们手动运行构建步骤。
 
 回想一下，在 nix 环境中，除非库或程序是用 `nix-env` 安装的，否则我们无法访问它们。然而，用 `nix-env` 安装库并不是好做法。我们更希望为开发提供隔离的环境，而 `nix-shell` 正是为此提供支持的。
 

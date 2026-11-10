@@ -217,7 +217,7 @@ derivation (defaultAttrs // attrs)
 
 3.  最后我们用那个奇怪的表达式（`defaultAttrs // attrs`）创建 derivation。
 
-[// 运算符](https://nix.dev/manual/nix/stable/language/operators.html#update)是作用于两个集合之间的运算符。结果是两个集合的并集。当属性名发生冲突时，右侧集合中的值优先。
+[// 运算符](https://nix-doc.mczihan.link/language/operators#update)是作用于两个集合之间的运算符。结果是两个集合的并集。当属性名发生冲突时，右侧集合中的值优先。
 
 所以我们把 `defaultAttrs` 用作基础集合，再添加（或 override，覆盖）来自 `attrs` 的属性。
 

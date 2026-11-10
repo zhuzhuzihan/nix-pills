@@ -8,7 +8,7 @@
 
 ## derivation 函数
 
-[derivation 内置函数](https://nix.dev/manual/nix/stable/language/derivations)用于创建 derivation。我建议你阅读 Nix 手册中关于 derivation 内置函数的链接。从 Nix 语言的视角来看，derivation 只是一个集合（set），带有若干属性。因此，你可以像对待其他任何东西一样，用变量来传递 derivation。
+[derivation 内置函数](https://nix-doc.mczihan.link/language/derivations)用于创建 derivation。我建议你阅读 Nix 手册中关于 derivation 内置函数的链接。从 Nix 语言的视角来看，derivation 只是一个集合（set），带有若干属性。因此，你可以像对待其他任何东西一样，用变量来传递 derivation。
 
 这正是它真正的威力所在。
 
@@ -291,9 +291,9 @@ Nix 不会在 Nix 表达式**求值期间**构建 derivation。事实上，这�
 
 Nix 中做了一个重要的区分：
 
-- **实例化/求值阶段（Instantiate/Evaluation time）**：Nix 表达式被解析、解释并最终返回一个 derivation 集合。在求值期间，你可以引用其他 derivation，因为 Nix 会创建 .drv 文件，而且我们会事先知道 out path。这是通过 [nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate) 实现的。
+- **实例化/求值阶段（Instantiate/Evaluation time）**：Nix 表达式被解析、解释并最终返回一个 derivation 集合。在求值期间，你可以引用其他 derivation，因为 Nix 会创建 .drv 文件，而且我们会事先知道 out path。这是通过 [nix-instantiate](https://nix-doc.mczihan.link/command-ref/nix-instantiate) 实现的。
 
-- **实现/构建阶段（Realise/Build time）**：来自 derivation 集合的 .drv 被构建，首先构建其 .drv 输入（构建依赖）。这是通过 [nix-store -r](https://nix.dev/manual/nix/stable/command-ref/nix-store/realise) 实现的。
+- **实现/构建阶段（Realise/Build time）**：来自 derivation 集合的 .drv 被构建，首先构建其 .drv 输入（构建依赖）。这是通过 [nix-store -r](https://nix-doc.mczihan.link/command-ref/nix-store/realise) 实现的。
 
 把它想象成 C/C++ 项目中的编译期和链接期。你先把所有源文件编译成目标文件，然后把目标文件链接成一个可执行文件。
 

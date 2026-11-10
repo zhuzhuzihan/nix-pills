@@ -6,7 +6,7 @@
 
 ## NIX_PATH
 
-[NIX_PATH 环境变量](https://nix.dev/manual/nix/stable/command-ref/env-common?highlight=NIX_PATH)非常重要。它非常类似于 `PATH` 环境变量。语法也很相似，多个路径之间用冒号 `:` 分隔。Nix 随后会从左到右在这些路径中搜索某个东西。
+[NIX_PATH 环境变量](https://nix-doc.mczihan.link/command-ref/env-common?highlight=NIX_PATH)非常重要。它非常类似于 `PATH` 环境变量。语法也很相似，多个路径之间用冒号 `:` 分隔。Nix 随后会从左到右在这些路径中搜索某个东西。
 
 谁会使用 `NIX_PATH`？是 nix 表达式！是的，`NIX_PATH` 对 nix 工具本身来说用处不大，它主要是在编写 nix 表达式时使用的。
 
@@ -16,7 +16,7 @@
 
 `NIX_PATH` 有什么用？Nix 表达式可以引用一个「抽象」路径，比如 `<nixpkgs>`，并且可以从命令行覆盖它。
 
-为了方便，我们将使用 `nix-instantiate --eval` 来做测试。提醒一下，[nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate) 用于求值 nix 表达式并生成 .drv 文件。这里我们对构建 derivation 不感兴趣，所以求值就够了。它可以用于一次性的表达式。
+为了方便，我们将使用 `nix-instantiate --eval` 来做测试。提醒一下，[nix-instantiate](https://nix-doc.mczihan.link/command-ref/nix-instantiate) 用于求值 nix 表达式并生成 .drv 文件。这里我们对构建 derivation 不感兴趣，所以求值就够了。它可以用于一次性的表达式。
 
 ## 稍微伪造一下
 
@@ -59,7 +59,7 @@ nixpkgs=/home/nix/.nix-defexpr/channels/nixpkgs
 
 你可以列出那个目录，并发现它只是 nixpkgs 仓库在某个特定提交处的检出（提示：`.version-suffix`）。
 
-`NIX_PATH` 变量由 `nix.sh` 导出，这也是为什么我一直要求你在每篇文章的开头[source nix.sh](https://nix.dev/manual/nix/stable/installation/env-variables)。
+`NIX_PATH` 变量由 `nix.sh` 导出，这也是为什么我一直要求你在每篇文章的开头[source nix.sh](https://nix-doc.mczihan.link/installation/env-variables)。
 
 你可能会想：那我是否也可以把 [nixpkgs](https://github.com/NixOS/nixpkgs) 路径指定为别的东西，例如 `nixpkgs` 的一个 `git checkout`？是的，可以，而且我鼓励你这样做。我们将在下一篇药丸中讨论这个。
 
@@ -75,7 +75,7 @@ $ nix-instantiate --eval '<mypkgs>'
 
 ## 关于 nix-env 的重要说明
 
-[nix-env](https://nix.dev/manual/nix/stable/command-ref/nix-env) 命令与 `nix-instantiate` 和 `nix-build` 略有不同。`nix-instantiate` 和 `nix-build` 需要一个起始的 nix 表达式，而 `nix-env` 不需要。
+[nix-env](https://nix-doc.mczihan.link/command-ref/nix-env) 命令与 `nix-instantiate` 和 `nix-build` 略有不同。`nix-instantiate` 和 `nix-build` 需要一个起始的 nix 表达式，而 `nix-env` 不需要。
 
 刚开始时你可能会被这个概念难住，你可能以为 `nix-env` 使用 `NIX_PATH` 来查找 `nixpkgs` 仓库。但并不是这样。
 

@@ -2,7 +2,7 @@
 
 欢迎来到第四篇 Nix 药丸。在[上一篇文章](03-enter-environment.md)中，我们学习了 Nix 环境。我们以用户身份安装软件、管理用户的 profile、在各 generation 之间切换，并查询 Nix store。这些是使用 Nix 进行系统管理的最基础知识。
 
-[Nix 语言](https://nix.dev/manual/nix/stable/language/)用于编写能够产生 derivation（派生）的表达式。[nix-build](https://nix.dev/manual/nix/stable/command-ref/nix-build) 工具用于从表达式构建 derivation。即使是一名希望定制安装的系统管理员，也有必要掌握 Nix。在工作中使用 Nix 意味着你可以免费获得前几篇文章中展示的那些特性。
+[Nix 语言](https://nix-doc.mczihan.link/language/)用于编写能够产生 derivation（派生）的表达式。[nix-build](https://nix-doc.mczihan.link/command-ref/nix-build) 工具用于从表达式构建 derivation。即使是一名希望定制安装的系统管理员，也有必要掌握 Nix。在工作中使用 Nix 意味着你可以免费获得前几篇文章中展示的那些特性。
 
 Nix 的语法相当陌生，因此查看现有示例可能会让你以为其中有很多魔法在起作用。实际上，它主要是通过编写一些工具函数来让事情变得方便。
 
@@ -22,7 +22,7 @@ Nix 的语法相当陌生，因此查看现有示例可能会让你以为其中�
 
 ## 值类型
 
-Nix 2.0 包含一个名为 `nix repl` 的命令，它是一个简单的命令行工具，可用于把玩 Nix 语言。事实上，Nix 是一门[纯函数式的惰性求值语言](https://nix.dev/manual/nix/stable/language/)，而不仅仅是一组管理 derivation 的工具。在给变量赋值时，`nix repl` 的语法与 Nix 语法略有不同，但只要你记住这一点，就不会造成困扰。在用更复杂的表达式充斥你的头脑之前，我更倾向于先从 `nix repl` 开始。
+Nix 2.0 包含一个名为 `nix repl` 的命令，它是一个简单的命令行工具，可用于把玩 Nix 语言。事实上，Nix 是一门[纯函数式的惰性求值语言](https://nix-doc.mczihan.link/language/)，而不仅仅是一组管理 derivation 的工具。在给变量赋值时，`nix repl` 的语法与 Nix 语法略有不同，但只要你记住这一点，就不会造成困扰。在用更复杂的表达式充斥你的头脑之前，我更倾向于先从 `nix repl` 开始。
 
 启动 `nix repl`。首先，Nix 支持基本的算术运算：`+`、`-`、`*` 和 `/`。（要退出 `nix repl`，使用命令 `:q`。可以通过 `:?` 命令获得帮助。）
 
@@ -56,7 +56,7 @@ nix-repl> builtins.div 6 3
 
 其他运算符包括用于布尔值的 `||`、`&&` 和 `!`，以及诸如 `!=`、`==`、`<`、`>`、`<=`、`>=` 之类的关系运算符。在 Nix 中，`<`、`>`、`<=` 和 `>=` 用得不多。本系列教程后面还会介绍其他运算符。
 
-Nix 拥有整数、浮点数、字符串、路径、布尔和 null 这些[简单](https://nix.dev/manual/nix/stable/language/#overview)类型。此外还有列表、属性集和函数。这些类型足以构建一个操作系统。
+Nix 拥有整数、浮点数、字符串、路径、布尔和 null 这些[简单](https://nix-doc.mczihan.link/language/#overview)类型。此外还有列表、属性集和函数。这些类型足以构建一个操作系统。
 
 Nix 是强类型的，但它不是静态类型的。也就是说，你不能把字符串和整数混用，必须先进行转换。
 
@@ -90,7 +90,7 @@ nix-repl> ''foo''
 
 在 Python 等其他语言中，你也可以用单引号表示字符串（例如 `'foo'`），但在 Nix 中不行。
 
-可以使用 `${...}` 语法（且仅限该语法，不能是 `$foo`、`{$foo}` 或其他任何写法）在字符串内[插值](https://nix.dev/manual/nix/stable/language/string-interpolation)完整的 Nix 表达式。
+可以使用 `${...}` 语法（且仅限该语法，不能是 `$foo`、`{$foo}` 或其他任何写法）在字符串内[插值](https://nix-doc.mczihan.link/language/string-interpolation)完整的 Nix 表达式。
 
 ```console
 nix-repl> foo = "strval"
@@ -165,7 +165,7 @@ nix-repl> { a = 3; b = a+4; }
 error: undefined variable `a' at (string):1:10
 ```
 
-要这样做，请使用[递归属性集](https://nix.dev/manual/nix/stable/language/constructs#recursive-sets)：
+要这样做，请使用[递归属性集](https://nix-doc.mczihan.link/language/)：
 
 ```console
 nix-repl> rec { a = 3; b = a+4; }

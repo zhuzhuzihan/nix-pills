@@ -8,7 +8,7 @@
 
 带有垃圾回收器的编程语言使用"垃圾回收器（GC）根"（GC roots）的概念来追踪"存活"的对象。GC 根是始终被视为"存活"的对象（除非被显式地移除出 GC 根）。垃圾回收过程从 GC 根出发，递归地将对象引用标记为"存活"。其余所有对象都可以被回收并删除。
 
-Nix 的垃圾回收操作的不是对象，而是存储路径，[GC 根本身就是存储路径](https://nix.dev/manual/nix/stable/package-management/garbage-collector-roots)。与 `dpkg` 或 `rpm` 这类传统软件包管理器相比，这种方式要有原则得多——后者可能会留下无用的软件包或悬空的文件。
+Nix 的垃圾回收操作的不是对象，而是存储路径，[GC 根本身就是存储路径](https://nix-doc.mczihan.link/package-management/garbage-collector-roots)。与 `dpkg` 或 `rpm` 这类传统软件包管理器相比，这种方式要有原则得多——后者可能会留下无用的软件包或悬空的文件。
 
 其实现对用户来说非常简单且透明。主要的 GC 根存放在 `/nix/var/nix/gcroots` 之下。如果该目录中存在指向某个存储路径的符号链接，那么被链接的存储路径就是一个 GC 根。
 
@@ -18,7 +18,7 @@ Nix 允许这个目录包含子目录：它会简单地递归遍历这些子目�
 
 ## 玩转垃圾回收器
 
-开始之前，我们先运行一下 [Nix 垃圾回收器](https://nix.dev/manual/nix/stable/command-ref/nix-collect-garbage)，以便为后续实验准备一个干净的环境：
+开始之前，我们先运行一下 [Nix 垃圾回收器](https://nix-doc.mczihan.link/command-ref/nix-collect-garbage)，以便为后续实验准备一个干净的环境：
 
 ```console
 $ nix-collect-garbage

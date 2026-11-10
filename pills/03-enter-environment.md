@@ -36,7 +36,7 @@ created 36 symlinks in user environment
 
 - 它创建了一个新的用户环境（user environment）。这是我们 Nix 用户 profile 的一个新代（generation）。
 
-- [nix-env](https://nix.dev/manual/nix/stable/command-ref/nix-env) 工具负责管理环境、profile 及其各代。
+- [nix-env](https://nix-doc.mczihan.link/command-ref/nix-env) 工具负责管理环境、profile 及其各代。
 
 - 我们是按去掉版本号的 derivation 名称安装 `hello` 的。我再说一遍：我们指定的是**derivation 名称**（去掉版本号）来安装它。
 
@@ -62,7 +62,7 @@ hello-2.10
 
 此时你大概想运行 `man` 查看一些文档了。即使你在 Nix 环境之外已经系统级安装了 man，你也可以用 `nix-env -i man-db` 在 Nix 内安装并使用它。照例会创建一个新代，`~/.nix-profile` 会指向它。
 
-让我们检视一下这个 [profile](https://nix.dev/manual/nix/stable/package-management/profiles)：
+让我们检视一下这个 [profile](https://nix-doc.mczihan.link/package-management/profiles)：
 
 ```console
 $ ls -l ~/.nix-profile/
@@ -106,7 +106,7 @@ switching from generation 2 to 3
 
 我建议你读一读 `nix-env` 的 manpage。`nix-env` 需要指定一个要执行的操作（operation），然后是所有操作通用的选项，以及每个操作各自的专属选项。
 
-当然，你也可以[卸载](https://nix.dev/manual/nix/stable/command-ref/nix-env/uninstall)和[升级](https://nix.dev/manual/nix/stable/command-ref/nix-env/upgrade)软件包。
+当然，你也可以[卸载](https://nix-doc.mczihan.link/command-ref/nix-env/uninstall)和[升级](https://nix-doc.mczihan.link/command-ref/nix-env/upgrade)软件包。
 
 ## 查询 store
 
@@ -196,7 +196,7 @@ $ /nix/store/ig31y9gfpp8pf3szdd7d4sf29zr7igbr-nix-2.1.3/bin/nix-env -i /nix/stor
 
 ## channel
 
-那么我们是从哪里获取软件包的呢？这在[第二篇文章](02-install-on-your-running-system.md)中已经提到过。我们有一份 channel 列表可以从中获取软件包，不过通常只用一个 channel。管理 channel 的工具是 [nix-channel](https://nix.dev/manual/nix/stable/command-ref/nix-channel)。
+那么我们是从哪里获取软件包的呢？这在[第二篇文章](02-install-on-your-running-system.md)中已经提到过。我们有一份 channel 列表可以从中获取软件包，不过通常只用一个 channel。管理 channel 的工具是 [nix-channel](https://nix-doc.mczihan.link/command-ref/nix-channel)。
 
 ```console
 $ nix-channel --list
@@ -219,7 +219,7 @@ nixpkgs http://nixos.org/channels/nixpkgs-unstable
 
 ## 结论
 
-我们学习了如何查询用户环境，以及通过安装和卸载软件来操作它。升级软件也很简单，你可以在[手册](https://nix.dev/manual/nix/stable/command-ref/nix-env/upgrade)中读到（`nix-env -u` 会升级环境中的所有软件包）。
+我们学习了如何查询用户环境，以及通过安装和卸载软件来操作它。升级软件也很简单，你可以在[手册](https://nix-doc.mczihan.link/command-ref/nix-env/upgrade)中读到（`nix-env -u` 会升级环境中的所有软件包）。
 
 每当我们改变环境，就会创建一个新代。在代之间切换既简单又即时。
 

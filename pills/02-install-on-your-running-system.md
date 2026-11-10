@@ -4,7 +4,7 @@
 
 现在我们将在现有系统上安装 Nix，并了解安装之后系统发生了哪些变化。**如果你在使用 NixOS，Nix 已经安装好了；你可以直接跳到[下一篇](03-enter-environment.md)药丸。**
 
-安装说明请参阅 Nix 参考手册中的 [Installing Nix](https://nix.dev/manual/nix/stable/installation/installing-binary) 章节。
+安装说明请参阅 Nix 参考手册中的 [Installing Nix](https://nix-doc.mczihan.link/installation/installing-binary) 章节。
 
 ## 安装
 
@@ -14,7 +14,7 @@
 
 <div class="info">
 
-注意：在多用户安装中（例如 NixOS 所采用的安装方式），store 由 root 所有，多个用户可以通过 Nix 守护进程安装和构建软件。你可以在[这里](https://nix.dev/manual/nix/stable/installation/installing-binary#multi-user-installation)阅读更多关于多用户安装的内容。
+注意：在多用户安装中（例如 NixOS 所采用的安装方式），store 由 root 所有，多个用户可以通过 Nix 守护进程安装和构建软件。你可以在[这里](https://nix-doc.mczihan.link/installation/installing-binary#multi-user-installation)阅读更多关于多用户安装的内容。
 
 </div>
 
@@ -60,7 +60,7 @@ initialising Nix database...
 
 ## 第一个 profile
 
-安装的下一步，我们遇到了 [profile](https://nix.dev/manual/nix/stable/package-management/profiles) 的概念：
+安装的下一步，我们遇到了 [profile](https://nix-doc.mczihan.link/package-management/profiles) 的概念：
 
 <pre><code class="hljs">creating /home/nix/.nix-profile
 installing 'nix-2.1.3'
@@ -105,7 +105,7 @@ created 2 symlinks in user environment
 modifying /home/nix/.profile...
 ```
 
-Nix 表达式使用 [Nix 语言](https://nix.dev/tutorials/nix-language)编写，用于描述软件包以及如何构建它们。[Nixpkgs](https://nixos.org/nixpkgs/) 就是包含所有这些表达式的仓库：<https://github.com/NixOS/nixpkgs>。
+Nix 表达式使用 [Nix 语言](https://nix-doc.mczihan.link/language/)编写，用于描述软件包以及如何构建它们。[Nixpkgs](https://nixos.org/nixpkgs/) 就是包含所有这些表达式的仓库：<https://github.com/NixOS/nixpkgs>。
 
 安装器从提交 `a1a2851` 下载了软件包描述。
 

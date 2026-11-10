@@ -2,7 +2,7 @@
 
 欢迎来到第五篇 Nix 药丸。在上一篇[第四篇药丸](04-basics-of-language.md)中，我们初步接触了 Nix 语言。我们介绍了 Nix 语言的基本类型和值，以及诸如 `if`、`with` 和 `let` 之类的基本表达式。我建议你重读这些表达式的相关内容，并在 repl 中把玩它们。
 
-函数有助于在像 [nixpkgs](https://github.com/NixOS/nixpkgs/) 这样的大型仓库中构建可复用的组件。Nix 手册中有一份[关于函数的出色讲解](https://nix.dev/manual/nix/stable/language/constructs#functions)。开始吧：一手拿着药丸，一手翻着 Nix 手册。
+函数有助于在像 [nixpkgs](https://github.com/NixOS/nixpkgs/) 这样的大型仓库中构建可复用的组件。Nix 手册中有一份[关于函数的出色讲解](https://nix-doc.mczihan.link/language/)。开始吧：一手拿着药丸，一手翻着 Nix 手册。
 
 提醒一下进入 Nix 环境的方法：`source ~/.nix-profile/etc/profile.d/nix.sh`
 
@@ -211,7 +211,7 @@ true
 
 - 在 `test.nix` 中，我们返回一个函数。它接收一个集合，其中属性 `b`、`trueMsg` 和 `falseMsg` 有默认值。
 
-- `builtins.trace` 是一个[内置函数](https://nix.dev/manual/nix/stable/language/builtins)，它接收两个参数：第一个是要显示的消息，第二个是要返回的值。它通常用于调试目的。
+- `builtins.trace` 是一个[内置函数](https://nix-doc.mczihan.link/language/builtins)，它接收两个参数：第一个是要显示的消息，第二个是要返回的值。它通常用于调试目的。
 
 - 然后我们导入 `test.nix`，并用那个集合调用该函数。
 

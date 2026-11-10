@@ -86,7 +86,7 @@ declare -x system="x86_64-linux"
 
 - `$PATH` 和 `$HOME` 玩的是同一套把戏。
 
-- `$NIX_BUILD_CORES` 和 `$NIX_STORE` 是 [nix 配置选项](https://nix.dev/manual/nix/stable/command-ref/conf-file)。
+- `$NIX_BUILD_CORES` 和 `$NIX_STORE` 是 [nix 配置选项](https://nix-doc.mczihan.link/command-ref/conf-file)。
 
 - `$PWD` 和 `$TMP` 清楚地表明 nix 创建了一个临时构建目录。
 
@@ -206,9 +206,9 @@ derivation {
 
 nix-build 做两件事：
 
-- [nix-instantiate](https://nix.dev/manual/nix/stable/command-ref/nix-instantiate)：解析并求值 `simple.nix`，返回与解析出的 derivation 集合对应的 .drv 文件。
+- [nix-instantiate](https://nix-doc.mczihan.link/command-ref/nix-instantiate)：解析并求值 `simple.nix`，返回与解析出的 derivation 集合对应的 .drv 文件。
 
-- [`nix-store -r`](https://nix.dev/manual/nix/stable/command-ref/nix-store/realise)：实现（realise）该 .drv 文件，也就是真正构建它。
+- [`nix-store -r`](https://nix-doc.mczihan.link/command-ref/nix-store/realise)：实现（realise）该 .drv 文件，也就是真正构建它。
 
 最后，它会创建那个符号链接。
 
@@ -234,7 +234,7 @@ derivation {
 }
 ```
 
-这里我们也顺便介绍一下 [`inherit` 关键字](https://nix.dev/manual/nix/stable/language/constructs#inheriting-attributes)。`inherit foo;` 等价于 `foo = foo;`。类似地，`inherit gcc coreutils;` 等价于 `gcc = gcc; coreutils = coreutils;`。最后，`inherit (pkgs) gcc coreutils;` 等价于 `gcc = pkgs.gcc; coreutils = pkgs.coreutils;`。
+这里我们也顺便介绍一下 [`inherit` 关键字](https://nix-doc.mczihan.link/language/)。`inherit foo;` 等价于 `foo = foo;`。类似地，`inherit gcc coreutils;` 等价于 `gcc = gcc; coreutils = coreutils;`。最后，`inherit (pkgs) gcc coreutils;` 等价于 `gcc = pkgs.gcc; coreutils = pkgs.coreutils;`。
 
 这种语法只在集合内有意义。这里没有任何魔法，只是一种便利写法，避免为属性名和作用域中的值重复书写同一个名字。
 
